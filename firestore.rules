@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função helper para verificar autenticação
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Função helper para verificar se é o dono do recurso
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Função helper para verificar se está criando com seu próprio userId
+    function isCreatingOwn() {
+      return isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Coleção de usuários
+    match /users/{userId} {
+      // Usuário só pode ler/escrever seu próprio perfil
+      allow read, write: if isOwner(userId);
+    }
+    
+    // Coleção de pacientes
+    match /patients/{patientId} {
+      // Leitura: usuário autenticado que é dono
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Criação: usuário autenticado criando com seu próprio userId
+      allow create: if isCreatingOwn();
+      
+      // Atualização/Exclusão: usuário autenticado que é dono
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Coleção de documentos
+    match /documents/{documentId} {
+      // Leitura: usuário autenticado que é dono
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Criação: usuário autenticado criando com seu próprio userId
+      allow create: if isCreatingOwn();
+      
+      // Atualização/Exclusão: usuário autenticado que é dono
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Negar acesso a qualquer outra coleção
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
