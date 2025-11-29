@@ -8,6 +8,10 @@ Plataforma de organização médica pessoal que transforma arquivos digitais des
 - **Classificação por IA**: Identifica automaticamente tipo, especialidade e data do documento
 - **Reconhecimento de Pacientes**: Vincula documentos a familiares usando fuzzy matching
 - **Busca Avançada**: Filtre por tipo, especialidade, paciente ou texto extraído
+- **Busca Semântica com Sinônimos** (RF17): Expande buscas com vocabulário médico (ex: "gripe" encontra "influenza")
+- **Tags Automáticas** (RF16): Classifica documentos com tags baseadas em IA
+- **Gerenciamento de Tags** (RF18): Adicione, remova e customize tags manualmente
+- **Busca Global**: Barra de busca centralizada no header, navegação automática para Arquivos
 - **Organização Hierárquica**: Visualize documentos agrupados por paciente
 - **Download Padronizado**: Arquivos renomeados no formato `AAAA-MM-DD-paciente-tipo-especialidade.ext`
 
@@ -17,9 +21,12 @@ Plataforma de organização médica pessoal que transforma arquivos digitais des
 - **Autenticação**: Firebase Auth
 - **Banco de Dados**: Firestore
 - **Storage**: Firebase Storage
-- **IA**: Integração com LLMs (DeepInfra/OpenAI)
-- **PDF**: pdf.js para extração de texto
-- **Ícones**: Lucide React
+- **IA/LLM**: DeepInfra API (Llama 2 para classificação, LLaVA para visão)
+- **PDF**: pdfjs-dist para extração de texto
+- **Busca**: Fuse.js para fuzzy matching
+- **UI**: Lucide React para ícones, react-hot-toast para notificações
+- **Upload**: react-dropzone para drag & drop
+- **Roteamento**: react-router-dom v6
 
 ## 🛠️ Instalação
 
@@ -103,12 +110,24 @@ service cloud.firestore {
 ```
 src/
 ├── components/         # Componentes reutilizáveis
-│   └── ui/            # UI primitives (Modal, Spinner, etc)
-├── contexts/          # React Context (Auth, Processing)
+│   ├── SearchBar.jsx   # Barra de busca global (header)
+│   ├── PatientMatchModal.jsx  # Modal de vinculação de pacientes
+│   ├── TagManager.jsx  # Gerenciador de tags (RF18)
+│   └── ui/            # UI primitives
+│       ├── Modal.jsx
+│       ├── Spinner.jsx
+│       ├── EmptyState.jsx
+│       └── LoadingScreen.jsx
+├── contexts/          # React Context
+│   ├── AuthContext.jsx
+│   ├── ProcessingContext.jsx
+│   └── SearchContext.jsx  # Contexto de busca global
 ├── layouts/           # Layouts de página
+│   ├── AuthLayout.jsx
+│   └── MainLayout.jsx
 ├── lib/               # Utilitários e configurações
 │   ├── firebase.js    # Config Firebase
-│   ├── constants.js   # Constantes da aplicação
+│   ├── constants.js   # Constantes (MEDICAL_SYNONYMS, tipos de doc, etc)
 │   └── utils.js       # Funções utilitárias
 ├── pages/             # Páginas da aplicação
 │   ├── auth/          # Login, Registro, Reset
@@ -117,6 +136,9 @@ src/
 │   ├── PatientsPage.jsx
 │   └── FilesPage.jsx
 ├── services/          # Serviços (Firestore, AI, Extraction)
+│   ├── aiService.js   # Classificação por IA e extração de tags (RF16)
+│   ├── extractionService.js  # Extração de texto de PDFs
+│   └── firestoreService.js   # Operações Firestore
 ├── App.jsx            # Router principal
 ├── main.jsx           # Entry point
 └── index.css          # Estilos globais (Tailwind)
