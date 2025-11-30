@@ -11,7 +11,8 @@ Plataforma de organização médica pessoal que transforma arquivos digitais des
 - **Busca Semântica com Sinônimos** (RF17): Expansão de buscas com vocabulário médico
 - **Tags Automáticas** (RF16): Classificação de documentos com tags baseadas em IA
 - **Gerenciamento de Tags** (RF18): Adição, remoção e customização manual de tags
-- **Busca Global**: Barra de busca centralizada no header com navegação automática
+- **Grupos Familiares** (RF19): Criação de grupos para compartilhar documentos entre múltiplos usuários
+- **Compartilhamento por Paciente** (RF20): Controle granular de visibilidade por paciente dentro do grupo
 - **Organização Hierárquica**: Visualização de documentos agrupados por paciente
 - **Download Padronizado**: Arquivos renomeados no formato `AAAA-MM-DD-paciente-tipo-especialidade.ext`
 
@@ -71,6 +72,7 @@ No console do Firebase:
 - Crie um banco Firestore
 - Configure as regras de segurança (veja abaixo)
 - Ative o Storage
+- Crie os índices compostos necessários (veja `firestore.indexes.json`)
 
 5. **Inicie o servidor de desenvolvimento**
 ```bash
@@ -83,23 +85,63 @@ npm run dev
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Usuários só acessam seus próprios dados
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isCreatingOwn() {
+      return isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+    
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
     }
     
     match /patients/{patientId} {
-      allow read, write: if request.auth != null 
-        && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null 
-        && request.auth.uid == request.resource.data.userId;
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && resource.data.isShared == true;
+      allow create: if isCreatingOwn();
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
     
     match /documents/{documentId} {
-      allow read, write: if request.auth != null 
-        && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null 
-        && request.auth.uid == request.resource.data.userId;
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && resource.data.patientId != null;
+      allow create: if isCreatingOwn();
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.patientId != null;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    match /familyGroups/{groupId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+        request.resource.data.ownerId == request.auth.uid &&
+        request.auth.uid in request.resource.data.memberIds;
+      allow update: if isAuthenticated() && 
+        (request.auth.uid in resource.data.memberIds || 
+         request.auth.uid in request.resource.data.memberIds);
+      allow delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+    }
+    
+    match /familyMembers/{memberId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || resource.data.invitedBy == request.auth.uid);
+      allow delete: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || resource.data.invitedBy == request.auth.uid);
+    }
+    
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
@@ -109,40 +151,52 @@ service cloud.firestore {
 
 ```
 src/
-├── components/         # Componentes reutilizáveis
-│   ├── SearchBar.jsx   # Barra de busca global (header)
-│   ├── PatientMatchModal.jsx  # Modal de vinculação de pacientes
-│   ├── TagManager.jsx  # Gerenciador de tags (RF18)
-│   └── ui/            # UI primitives
-│       ├── Modal.jsx
-│       ├── Spinner.jsx
+├── components/                    # Componentes reutilizáveis
+│   ├── FamilyGroupManager.jsx     # Gerenciamento de grupos familiares (RF19)
+│   ├── PatientMatchModal.jsx      # Modal de vinculação de pacientes
+│   ├── PatientSharingSettings.jsx # Configurações de compartilhamento (RF20)
+│   ├── TagManager.jsx             # Gerenciador de tags (RF18)
+│   └── ui/                        # Componentes UI primitivos
 │       ├── EmptyState.jsx
-│       └── LoadingScreen.jsx
-├── contexts/          # React Context
-│   ├── AuthContext.jsx
-│   ├── ProcessingContext.jsx
-│   └── SearchContext.jsx  # Contexto de busca global
-├── layouts/           # Layouts de página
-│   ├── AuthLayout.jsx
-│   └── MainLayout.jsx
-├── lib/               # Utilitários e configurações
-│   ├── firebase.js    # Config Firebase
-│   ├── constants.js   # Constantes (MEDICAL_SYNONYMS, tipos de doc, etc)
-│   └── utils.js       # Funções utilitárias
-├── pages/             # Páginas da aplicação
-│   ├── auth/          # Login, Registro, Reset
-│   ├── DashboardPage.jsx
-│   ├── ProcessorPage.jsx
-│   ├── PatientsPage.jsx
-│   └── FilesPage.jsx
-├── services/          # Serviços (Firestore, AI, Extraction)
-│   ├── aiService.js   # Classificação por IA e extração de tags (RF16)
-│   ├── extractionService.js  # Extração de texto de PDFs
-│   └── firestoreService.js   # Operações Firestore
-├── App.jsx            # Router principal
-├── main.jsx           # Entry point
-└── index.css          # Estilos globais (Tailwind)
+│       ├── LoadingScreen.jsx
+│       ├── Modal.jsx
+│       └── Spinner.jsx
+├── contexts/                      # React Context
+│   ├── AuthContext.jsx            # Autenticação e perfil do usuário
+│   ├── FamilyContext.jsx          # Estado do grupo familiar (RF19)
+│   └── ProcessingContext.jsx      # Fila de processamento de documentos
+├── layouts/                       # Layouts de página
+│   ├── AuthLayout.jsx             # Layout para páginas de autenticação
+│   └── MainLayout.jsx             # Layout principal com sidebar
+├── lib/                           # Utilitários e configurações
+│   ├── firebase.js                # Configuração Firebase
+│   ├── constants.js               # Constantes (tipos, especialidades, sinônimos)
+│   └── utils.js                   # Funções utilitárias
+├── pages/                         # Páginas da aplicação
+│   ├── auth/                      # Login, Registro, Reset de senha
+│   ├── DashboardPage.jsx          # Visão geral e estatísticas
+│   ├── FilesPage.jsx              # Listagem e busca de documentos
+│   ├── PatientsPage.jsx           # Gerenciamento de pacientes
+│   └── ProcessorPage.jsx          # Upload e processamento de documentos
+├── services/                      # Serviços e integrações
+│   ├── aiService.js               # Classificação por IA e extração de tags
+│   ├── extractionService.js       # Extração de texto de PDFs
+│   ├── familyService.js           # Operações de grupos familiares (RF19, RF20)
+│   └── firestoreService.js        # Operações CRUD Firestore
+├── App.jsx                        # Router principal
+├── main.jsx                       # Entry point
+└── index.css                      # Estilos globais (Tailwind)
 ```
+
+## Modelo de Dados (Firestore)
+
+| Coleção | Descrição |
+|---------|-----------|
+| `users` | Perfis de usuários e estatísticas de uso |
+| `patients` | Pacientes (familiares) cadastrados por usuário |
+| `documents` | Documentos médicos com metadados extraídos |
+| `familyGroups` | Grupos familiares para compartilhamento |
+| `familyMembers` | Membros e convites de grupos familiares |
 
 ## Design System
 
