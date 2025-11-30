@@ -19,35 +19,86 @@ service cloud.firestore {
     
     // Coleção de usuários
     match /users/{userId} {
-      // Usuário só pode ler/escrever seu próprio perfil
-      allow read, write: if isOwner(userId);
+      // Usuário pode ler seu próprio perfil
+      allow read: if isOwner(userId);
+      // Usuário pode escrever seu próprio perfil
+      allow write: if isOwner(userId);
+      // Qualquer usuário autenticado pode ler (para buscar por email em convites)
+      allow read: if isAuthenticated();
     }
     
-    // Coleção de pacientes
+    // Coleção de pacientes (RF20 - Compartilhamento por Paciente)
     match /patients/{patientId} {
-      // Leitura: usuário autenticado que é dono
+      // Leitura: dono sempre pode ler
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Leitura: pacientes compartilhados podem ser lidos por membros do grupo
+      allow read: if isAuthenticated() && resource.data.isShared == true;
       
       // Criação: usuário autenticado criando com seu próprio userId
       allow create: if isCreatingOwn();
       
-      // Atualização/Exclusão: usuário autenticado que é dono
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Atualização: dono pode atualizar
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Exclusão: apenas dono pode excluir
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
     
-    // Coleção de documentos
+    // Coleção de documentos (RF20 - visibilidade segue paciente)
     match /documents/{documentId} {
-      // Leitura: usuário autenticado que é dono
+      // Leitura: dono sempre pode ler
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       
       // Criação: usuário autenticado criando com seu próprio userId
       allow create: if isCreatingOwn();
       
-      // Atualização/Exclusão: usuário autenticado que é dono
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Atualização: dono pode atualizar
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Exclusão: dono pode excluir
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
     
-    // Negar acesso a qualquer outra coleção
+    // Coleção de grupos familiares (RF19)
+    match /familyGroups/{groupId} {
+      // Leitura: qualquer usuário autenticado pode ler (para ver info do grupo em convites)
+      allow read: if isAuthenticated();
+      
+      // Criação: usuário autenticado pode criar se for owner e estiver nos memberIds
+      allow create: if isAuthenticated() && 
+        request.resource.data.ownerId == request.auth.uid &&
+        request.auth.uid in request.resource.data.memberIds;
+      
+      // Atualização: membros do grupo podem atualizar
+      // OU usuário está sendo adicionado ao grupo (aceitando convite)
+      allow update: if isAuthenticated() && 
+        (request.auth.uid in resource.data.memberIds || 
+         request.auth.uid in request.resource.data.memberIds);
+      
+      // Exclusão: apenas owner pode excluir
+      allow delete: if isAuthenticated() && 
+        resource.data.ownerId == request.auth.uid;
+    }
+    
+    // Coleção de membros de família (RF19)
+    match /familyMembers/{memberId} {
+      // Leitura: próprio usuário ou qualquer autenticado (para verificar memberships)
+      allow read: if isAuthenticated();
+      
+      // Criação: qualquer usuário autenticado pode criar (para criar junto com grupo ou convidar)
+      allow create: if isAuthenticated();
+      
+      // Atualização: próprio usuário pode aceitar/recusar ou quem criou pode editar
+      allow update: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || resource.data.invitedBy == request.auth.uid);
+      
+      // Exclusão: próprio usuário pode sair ou quem convidou pode remover
+      allow delete: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || resource.data.invitedBy == request.auth.uid);
+    }
+    
+    // Negar acesso a qualquer outra coleção não especificada
     match /{document=**} {
       allow read, write: if false;
     }

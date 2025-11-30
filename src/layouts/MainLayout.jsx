@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useFamily } from '../contexts/FamilyContext'
 import { 
   LayoutDashboard, 
   Upload, 
@@ -11,7 +12,8 @@ import {
   Menu,
   X,
   FileHeart,
-  ChevronDown
+  ChevronDown,
+  UsersRound
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -20,12 +22,14 @@ const navItems = [
   { to: '/processor', icon: Upload, label: 'Smart Processor' },
   { to: '/patients', icon: Users, label: 'Pacientes' },
   { to: '/files', icon: FolderOpen, label: 'Arquivos' },
+  { to: '/family', icon: UsersRound, label: 'Grupo Familiar' },
 ]
 
 export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const { user, userProfile, logout } = useAuth()
+  const { hasPendingInvite, pendingInvites } = useFamily()
   const navigate = useNavigate()
 
   async function handleLogout() {
@@ -81,12 +85,18 @@ export default function MainLayout() {
                 to={item.to}
                 onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) => `
-                  nav-link
+                  nav-link relative
                   ${isActive ? 'active' : ''}
                 `}
               >
                 <item.icon className="w-5 h-5" />
                 {item.label}
+                {/* Badge de convite pendente para Grupo Familiar */}
+                {item.to === '/family' && hasPendingInvite && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full bg-primary-500 text-white text-xs font-medium">
+                    {pendingInvites.length}
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>

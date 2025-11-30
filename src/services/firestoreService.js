@@ -61,13 +61,14 @@ export async function createPatient(userId, patientData) {
     aliases: patientData.aliases || [],
     dateOfBirth: patientData.dateOfBirth || null,
     relationship: patientData.relationship || null,
+    isShared: patientData.isShared ?? false, // RF20: Compartilhamento por paciente
     documentCount: 0,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   }
   
   const docRef = await addDoc(collection(db, 'patients'), patient)
-  return { id: docRef.id, ...patient }
+  return { id: docRef.id, ...patient, isOwn: true }
 }
 
 /**

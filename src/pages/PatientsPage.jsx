@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useFamily } from '../contexts/FamilyContext'
 import { 
   getPatients, 
   createPatient, 
@@ -8,6 +9,7 @@ import {
   addPatientAlias,
   removePatientAlias 
 } from '../services/firestoreService'
+import { getVisiblePatients, updatePatientSharing } from '../services/familyService'
 import { GENDERS, RELATIONSHIPS } from '../lib/constants'
 import { 
   UserPlus, 
@@ -16,13 +18,18 @@ import {
   X, 
   Plus,
   FileText,
-  Check
+  Check,
+  Users,
+  Lock,
+  Unlock,
+  Settings,
+  Eye
 } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import Spinner from '../components/ui/Spinner'
 import EmptyState from '../components/ui/EmptyState'
+import PatientSharingSettings, { SharingBadge } from '../components/PatientSharingSettings'
 import toast from 'react-hot-toast'
-
 // Formulário de paciente
 function PatientForm({ patient, onSubmit, onCancel, loading }) {
   const [name, setName] = useState(patient?.name || '')
@@ -125,10 +132,11 @@ function PatientForm({ patient, onSubmit, onCancel, loading }) {
 }
 
 // Card de paciente
-function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias }) {
+function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias, onShare, hasGroup, isOwn }) {
   const [newAlias, setNewAlias] = useState('')
   const [showAliasInput, setShowAliasInput] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [sharingLoading, setSharingLoading] = useState(false)
 
   const genderIcons = { M: '👨', F: '👩', O: '🧑' }
   const relationshipLabels = Object.fromEntries(RELATIONSHIPS.map(r => [r.value, r.label]))
@@ -168,13 +176,35 @@ function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias }) {
     }
   }
 
+  async function handleToggleSharing() {
+    if (!isOwn) return // Só dono pode alterar compartilhamento
+    
+    setSharingLoading(true)
+    try {
+      await onShare(patient.id, !patient.isShared)
+      toast.success(patient.isShared ? 'Paciente agora é privado' : 'Paciente compartilhado com o grupo')
+    } catch (error) {
+      toast.error(error.message || 'Erro ao alterar compartilhamento')
+    } finally {
+      setSharingLoading(false)
+    }
+  }
+
   return (
-    <div className="card p-6">
+    <div className={`card p-6 ${!isOwn ? 'border-primary-200 bg-primary-50/30' : ''}`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="text-4xl">{genderIcons[patient.gender] || '🧑'}</div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{patient.name}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-gray-900">{patient.name}</h3>
+              {!isOwn && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-primary-100 text-primary-700">
+                  <Eye className="w-3 h-3" />
+                  Compartilhado
+                </span>
+              )}
+            </div>
             {patient.relationship && (
               <span className="text-sm text-gray-500">
                 {relationshipLabels[patient.relationship] || patient.relationship}
@@ -183,23 +213,46 @@ function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias }) {
           </div>
         </div>
         
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => onEdit(patient)}
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
-            title="Editar"
-          >
-            <Edit2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="p-2 rounded-lg hover:bg-error-50 text-error-600"
-            title="Excluir"
-          >
-            {deleting ? <Spinner size="sm" /> : <Trash2 className="w-4 h-4" />}
-          </button>
-        </div>
+        {isOwn && (
+          <div className="flex items-center gap-1">
+            {/* Botão de compartilhamento (só se tiver grupo) */}
+            {hasGroup && (
+              <button
+                onClick={handleToggleSharing}
+                disabled={sharingLoading}
+                className={`p-2 rounded-lg ${
+                  patient.isShared 
+                    ? 'bg-primary-100 text-primary-600 hover:bg-primary-200' 
+                    : 'hover:bg-gray-100 text-gray-600'
+                }`}
+                title={patient.isShared ? 'Compartilhado - clique para tornar privado' : 'Privado - clique para compartilhar'}
+              >
+                {sharingLoading ? (
+                  <Spinner size="sm" />
+                ) : patient.isShared ? (
+                  <Unlock className="w-4 h-4" />
+                ) : (
+                  <Lock className="w-4 h-4" />
+                )}
+              </button>
+            )}
+            <button
+              onClick={() => onEdit(patient)}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+              title="Editar"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="p-2 rounded-lg hover:bg-error-50 text-error-600"
+              title="Excluir"
+            >
+              {deleting ? <Spinner size="sm" /> : <Trash2 className="w-4 h-4" />}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Info */}
@@ -213,104 +266,120 @@ function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias }) {
           <FileText className="w-4 h-4" />
           {patient.documentCount || 0} documentos
         </div>
-      </div>
-
-      {/* Aliases */}
-      <div className="border-t pt-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">Apelidos</span>
-          {!showAliasInput && (patient.aliases?.length || 0) < 10 && (
-            <button
-              onClick={() => setShowAliasInput(true)}
-              className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
-            >
-              <Plus className="w-3 h-3" />
-              Adicionar
-            </button>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {patient.aliases?.map(alias => (
-            <span 
-              key={alias}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-lg text-sm"
-            >
-              {alias}
-              <button
-                onClick={() => handleRemoveAlias(alias)}
-                className="text-gray-400 hover:text-error-500"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
-          
-          {(!patient.aliases || patient.aliases.length === 0) && !showAliasInput && (
-            <span className="text-sm text-gray-400 italic">Nenhum apelido</span>
-          )}
-        </div>
-
-        {/* Input para novo alias */}
-        {showAliasInput && (
-          <div className="flex items-center gap-2 mt-2">
-            <input
-              type="text"
-              value={newAlias}
-              onChange={(e) => setNewAlias(e.target.value)}
-              className="input flex-1"
-              placeholder="Digite o apelido..."
-              maxLength={50}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleAddAlias()
-                if (e.key === 'Escape') {
-                  setShowAliasInput(false)
-                  setNewAlias('')
-                }
-              }}
-            />
-            <button
-              onClick={handleAddAlias}
-              className="p-2 rounded-lg bg-primary-500 text-white hover:bg-primary-600"
-            >
-              <Check className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => {
-                setShowAliasInput(false)
-                setNewAlias('')
-              }}
-              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
-            >
-              <X className="w-4 h-4" />
-            </button>
+        {/* Badge de compartilhamento */}
+        {hasGroup && isOwn && (
+          <div className="pt-1">
+            <SharingBadge isShared={patient.isShared} size="sm" />
           </div>
         )}
       </div>
+
+      {/* Aliases - só mostra para pacientes próprios */}
+      {isOwn && (
+        <div className="border-t pt-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">Apelidos</span>
+            {!showAliasInput && (patient.aliases?.length || 0) < 10 && (
+              <button
+                onClick={() => setShowAliasInput(true)}
+                className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" />
+                Adicionar
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {patient.aliases?.map(alias => (
+              <span 
+                key={alias}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-lg text-sm"
+              >
+                {alias}
+                <button
+                  onClick={() => handleRemoveAlias(alias)}
+                  className="text-gray-400 hover:text-error-500"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+            
+            {(!patient.aliases || patient.aliases.length === 0) && !showAliasInput && (
+              <span className="text-sm text-gray-400 italic">Nenhum apelido</span>
+            )}
+          </div>
+
+          {/* Input para novo alias */}
+          {showAliasInput && (
+            <div className="flex items-center gap-2 mt-2">
+              <input
+                type="text"
+                value={newAlias}
+                onChange={(e) => setNewAlias(e.target.value)}
+                className="input flex-1"
+                placeholder="Digite o apelido..."
+                maxLength={50}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddAlias()
+                  if (e.key === 'Escape') {
+                    setShowAliasInput(false)
+                    setNewAlias('')
+                  }
+                }}
+              />
+              <button
+                onClick={handleAddAlias}
+                className="p-2 rounded-lg bg-primary-500 text-white hover:bg-primary-600"
+              >
+                <Check className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  setShowAliasInput(false)
+                  setNewAlias('')
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
 export default function PatientsPage() {
   const { user } = useAuth()
+  const { hasGroup, familyGroup } = useFamily()
   const [patients, setPatients] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingPatient, setEditingPatient] = useState(null)
   const [saving, setSaving] = useState(false)
 
-  // Carregar pacientes
+  // Carregar pacientes (próprios + compartilhados do grupo)
   useEffect(() => {
     if (!user) return
     
     loadPatients()
-  }, [user])
+  }, [user, familyGroup])
 
   async function loadPatients() {
     try {
-      const data = await getPatients(user.uid)
-      setPatients(data)
+      // Se tem grupo familiar, busca também pacientes compartilhados
+      if (familyGroup) {
+        const data = await getVisiblePatients(user.uid, familyGroup)
+        setPatients(data)
+      } else {
+        // Sem grupo, busca apenas pacientes próprios
+        const data = await getPatients(user.uid)
+        setPatients(data.map(p => ({ ...p, isOwn: true })))
+      }
     } catch (error) {
       console.error('Erro ao carregar pacientes:', error)
       toast.error('Erro ao carregar pacientes')
@@ -320,6 +389,11 @@ export default function PatientsPage() {
   }
 
   function openModal(patient = null) {
+    // Só permite editar pacientes próprios
+    if (patient && !patient.isOwn) {
+      toast.error('Você não pode editar pacientes de outros membros')
+      return
+    }
     setEditingPatient(patient)
     setModalOpen(true)
   }
@@ -369,6 +443,11 @@ export default function PatientsPage() {
     loadPatients()
   }
 
+  async function handleShare(patientId, isShared) {
+    await updatePatientSharing(patientId, isShared)
+    loadPatients()
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -384,7 +463,10 @@ export default function PatientsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Pacientes</h1>
           <p className="text-gray-500 mt-1">
-            Gerencie os membros da sua família
+            {hasGroup 
+              ? 'Seus pacientes e os compartilhados pelo grupo familiar'
+              : 'Gerencie os membros da sua família'
+            }
           </p>
         </div>
         
@@ -393,6 +475,23 @@ export default function PatientsPage() {
           Adicionar Paciente
         </button>
       </div>
+
+      {/* Info sobre compartilhamento */}
+      {hasGroup && (
+        <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+          <div className="flex items-start gap-3">
+            <Users className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="font-medium text-blue-900">Grupo Familiar: {familyGroup?.name}</h4>
+              <p className="text-sm text-blue-700 mt-1">
+                Use o ícone <Lock className="w-4 h-4 inline-block mx-1" /> para tornar um paciente privado ou{' '}
+                <Unlock className="w-4 h-4 inline-block mx-1" /> para compartilhar com o grupo.
+                Pacientes de outros membros aparecem com destaque.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lista de pacientes */}
       {patients.length === 0 ? (
@@ -417,6 +516,9 @@ export default function PatientsPage() {
               onDelete={handleDelete}
               onAddAlias={handleAddAlias}
               onRemoveAlias={handleRemoveAlias}
+              onShare={handleShare}
+              hasGroup={hasGroup}
+              isOwn={patient.isOwn !== false}
             />
           ))}
         </div>

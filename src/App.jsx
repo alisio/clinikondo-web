@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import { ProcessingProvider } from './contexts/ProcessingContext'
+import { FamilyProvider } from './contexts/FamilyContext'
 
 // Layouts
 import MainLayout from './layouts/MainLayout'
@@ -16,6 +17,7 @@ import DashboardPage from './pages/DashboardPage'
 import ProcessorPage from './pages/ProcessorPage'
 import PatientsPage from './pages/PatientsPage'
 import FilesPage from './pages/FilesPage'
+import FamilyPage from './pages/FamilyPage'
 
 // Componentes
 import LoadingScreen from './components/ui/LoadingScreen'
@@ -67,7 +69,9 @@ function App() {
       <Route element={
         <PrivateRoute>
           <ProcessingProvider>
-            <MainLayout />
+            <FamilyProvider>
+              <MainLayout />
+            </FamilyProvider>
           </ProcessingProvider>
         </PrivateRoute>
       }>
@@ -75,6 +79,7 @@ function App() {
         <Route path="/processor" element={<ProcessorPage />} />
         <Route path="/patients" element={<PatientsPage />} />
         <Route path="/files" element={<FilesPage />} />
+        <Route path="/family" element={<FamilyPage />} />
       </Route>
 
       {/* 404 - Redireciona para home */}
