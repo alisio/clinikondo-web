@@ -1,21 +1,21 @@
-# CliniKondo Web Edition 🏥✨
+# CliniKondo Web Edition
 
-Plataforma de organização médica pessoal que transforma arquivos digitais desorganizados em um arquivo digital estruturado, pesquisável e seguro usando Inteligência Artificial.
+Plataforma de organização médica pessoal que transforma arquivos digitais desorganizados em um arquivo digital estruturado, pesquisável e seguro utilizando Inteligência Artificial.
 
-## 🚀 Funcionalidades
+## Funcionalidades
 
-- **Upload Inteligente**: Arraste e solte PDFs, JPGs e PNGs
-- **Classificação por IA**: Identifica automaticamente tipo, especialidade e data do documento
-- **Reconhecimento de Pacientes**: Vincula documentos a familiares usando fuzzy matching
-- **Busca Avançada**: Filtre por tipo, especialidade, paciente ou texto extraído
-- **Busca Semântica com Sinônimos** (RF17): Expande buscas com vocabulário médico (ex: "gripe" encontra "influenza")
-- **Tags Automáticas** (RF16): Classifica documentos com tags baseadas em IA
-- **Gerenciamento de Tags** (RF18): Adicione, remova e customize tags manualmente
-- **Busca Global**: Barra de busca centralizada no header, navegação automática para Arquivos
-- **Organização Hierárquica**: Visualize documentos agrupados por paciente
+- **Upload Inteligente**: Suporte a drag-and-drop para PDFs, JPGs e PNGs
+- **Classificação por IA**: Identificação automática de tipo, especialidade e data do documento
+- **Reconhecimento de Pacientes**: Vinculação de documentos a familiares via fuzzy matching
+- **Busca Avançada**: Filtros por tipo, especialidade, paciente ou texto extraído
+- **Busca Semântica com Sinônimos** (RF17): Expansão de buscas com vocabulário médico
+- **Tags Automáticas** (RF16): Classificação de documentos com tags baseadas em IA
+- **Gerenciamento de Tags** (RF18): Adição, remoção e customização manual de tags
+- **Busca Global**: Barra de busca centralizada no header com navegação automática
+- **Organização Hierárquica**: Visualização de documentos agrupados por paciente
 - **Download Padronizado**: Arquivos renomeados no formato `AAAA-MM-DD-paciente-tipo-especialidade.ext`
 
-## 📦 Stack Tecnológico
+## Stack Tecnológico
 
 - **Frontend**: React 18 + Vite + Tailwind CSS
 - **Autenticação**: Firebase Auth
@@ -25,10 +25,10 @@ Plataforma de organização médica pessoal que transforma arquivos digitais des
 - **PDF**: pdfjs-dist para extração de texto
 - **Busca**: Fuse.js para fuzzy matching
 - **UI**: Lucide React para ícones, react-hot-toast para notificações
-- **Upload**: react-dropzone para drag & drop
+- **Upload**: react-dropzone para drag-and-drop
 - **Roteamento**: react-router-dom v6
 
-## 🛠️ Instalação
+## Instalação
 
 ### Pré-requisitos
 
@@ -77,7 +77,7 @@ No console do Firebase:
 npm run dev
 ```
 
-## 🔒 Regras de Segurança (Firestore)
+## Regras de Segurança (Firestore)
 
 ```javascript
 rules_version = '2';
@@ -105,7 +105,7 @@ service cloud.firestore {
 }
 ```
 
-## 📁 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 src/
@@ -144,7 +144,7 @@ src/
 └── index.css          # Estilos globais (Tailwind)
 ```
 
-## 🎨 Design System
+## Design System
 
 | Elemento | Especificação |
 |----------|---------------|
@@ -155,13 +155,13 @@ src/
 | Espaçamento | Grid 8px |
 | Border Radius | 8-12px |
 
-## 📱 Responsividade
+## Responsividade
 
 - **Desktop (1024px+)**: Sidebar fixa, 4 colunas
 - **Tablet (768-1023px)**: Sidebar colapsável, 2 colunas
 - **Mobile (<768px)**: Menu hambúrguer, 1 coluna
 
-## 🧪 Scripts Disponíveis
+## Scripts Disponíveis
 
 ```bash
 npm run dev      # Servidor de desenvolvimento
@@ -170,19 +170,14 @@ npm run preview  # Preview do build
 npm run lint     # Verificar código
 ```
 
-## 📄 Licença
+## Licença
 
-MIT License - Veja [LICENSE](LICENSE) para detalhes.
+MIT License - Consulte [LICENSE](LICENSE) para detalhes.
 
-## 🤝 Contribuindo
+## Contribuindo
 
 1. Fork o projeto
 2. Crie sua branch (`git checkout -b feature/nova-funcionalidade`)
 3. Commit suas mudanças (`git commit -m 'feat: adiciona nova funcionalidade'`)
 4. Push para a branch (`git push origin feature/nova-funcionalidade`)
 5. Abra um Pull Request
-
----
-
-Desenvolvido com ❤️ para organizar a saúde da sua família.
-# clinikondo-web
