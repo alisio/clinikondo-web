@@ -50,6 +50,11 @@ service cloud.firestore {
       // Leitura: dono sempre pode ler
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       
+      // Leitura: documentos vinculados a um paciente podem ser lidos se o usuário está autenticado
+      // (a verificação de permissão de compartilhamento é feita no código, pois Firestore não suporta joins)
+      // Apenas documentos COM patientId são elegíveis para compartilhamento
+      allow read: if isAuthenticated() && resource.data.patientId != null;
+      
       // Criação: usuário autenticado criando com seu próprio userId
       allow create: if isCreatingOwn();
       

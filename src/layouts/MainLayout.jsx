@@ -108,10 +108,10 @@ export default function MainLayout() {
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-medium">
+                <div className="w-10 h-10 flex-shrink-0 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-medium">
                   {initials}
                 </div>
-                <div className="flex-1 text-left">
+                <div className="flex-1 min-w-0 text-left">
                   <div className="text-sm font-medium text-gray-900 truncate">
                     {displayName}
                   </div>
@@ -119,7 +119,7 @@ export default function MainLayout() {
                     {user?.email}
                   </div>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 flex-shrink-0 text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Dropdown menu */}

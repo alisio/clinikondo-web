@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useFamily } from '../contexts/FamilyContext'
 import { getUserStats, getPatients } from '../services/firestoreService'
+import { getVisiblePatients } from '../services/familyService'
 import { 
   FileText, 
   CheckCircle, 
@@ -65,6 +67,7 @@ function PatientCard({ patient }) {
 
 export default function DashboardPage() {
   const { user, userProfile } = useAuth()
+  const { familyGroup } = useFamily()
   const [stats, setStats] = useState(null)
   const [patients, setPatients] = useState([])
   const [loading, setLoading] = useState(true)
@@ -74,9 +77,10 @@ export default function DashboardPage() {
       if (!user) return
       
       try {
+        // Usar getVisiblePatients para incluir pacientes compartilhados do grupo familiar (RF20)
         const [statsData, patientsData] = await Promise.all([
           getUserStats(user.uid),
-          getPatients(user.uid),
+          getVisiblePatients(user.uid, familyGroup),
         ])
         
         setStats(statsData)
@@ -89,7 +93,7 @@ export default function DashboardPage() {
     }
     
     loadData()
-  }, [user])
+  }, [user, familyGroup])
 
   if (loading) {
     return (

@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useFamily } from '../contexts/FamilyContext'
 import { getDocuments, getPatients, deleteDocument, linkDocumentToPatient, getDocumentTags } from '../services/firestoreService'
+import { getDocumentsWithShared, getVisiblePatients } from '../services/familyService'
 import { DOCUMENT_TYPES, SPECIALTIES, expandSearchWithSynonyms, normalizeTag } from '../lib/constants'
 import { formatDate, formatFileSize, getConfidenceColor, debounce } from '../lib/utils'
 import { 
@@ -263,6 +265,7 @@ function DocumentCard({ document, patient, patients, onView, onDelete, onLink })
 
 export default function FilesPage() {
   const { user } = useAuth()
+  const { familyGroup } = useFamily()
   const [searchParams] = useSearchParams()
   
   const [documents, setDocuments] = useState([])
@@ -282,15 +285,16 @@ export default function FilesPage() {
   // Grupos expandidos
   const [expandedPatients, setExpandedPatients] = useState(new Set())
 
-  // Carregar dados
+  // Carregar dados (incluindo compartilhados do grupo familiar - RF20)
   useEffect(() => {
     if (!user) return
     
     async function load() {
       try {
+        // Usar funções que consideram grupo familiar para ver documentos e pacientes compartilhados
         const [docsData, patientsData] = await Promise.all([
-          getDocuments(user.uid),
-          getPatients(user.uid),
+          getDocumentsWithShared(user.uid, familyGroup),
+          getVisiblePatients(user.uid, familyGroup),
         ])
         
         setDocuments(docsData)
@@ -307,7 +311,7 @@ export default function FilesPage() {
     }
     
     load()
-  }, [user])
+  }, [user, familyGroup])
 
   // Filtrar documentos
   const filteredDocuments = useMemo(() => {

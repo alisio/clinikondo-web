@@ -683,6 +683,110 @@ export async function canManagePatient(userId, patientId, familyGroup = null) {
   return true
 }
 
+// ============ DOCUMENTS WITH SHARING (RF20) ============
+
+/**
+ * Busca documentos visíveis para um usuário considerando grupos familiares (RF20)
+ * 
+ * Regras de visibilidade de documentos:
+ * 1. Documentos próprios (userId === currentUser) sempre visíveis
+ * 2. Documentos vinculados a pacientes compartilhados (isShared = true) de outros membros
+ * 3. Documentos não vinculados a paciente são privados (só o dono vê)
+ */
+export async function getDocumentsWithShared(userId, familyGroup = null) {
+  // 1. Sempre buscar documentos próprios
+  const ownDocsQuery = query(
+    collection(db, 'documents'),
+    where('userId', '==', userId),
+    orderBy('uploadedAt', 'desc')
+  )
+  
+  const ownDocsSnapshot = await getDocs(ownDocsQuery)
+  const ownDocuments = ownDocsSnapshot.docs.map(doc => ({ 
+    id: doc.id, 
+    ...doc.data(),
+    isOwn: true 
+  }))
+
+  // Se não tem grupo familiar, retorna apenas os próprios
+  if (!familyGroup) {
+    return ownDocuments
+  }
+
+  // 2. Buscar IDs dos pacientes compartilhados de outros membros do grupo
+  const otherMemberIds = familyGroup.memberIds.filter(id => id !== userId)
+  
+  if (otherMemberIds.length === 0) {
+    return ownDocuments
+  }
+
+  // Buscar pacientes compartilhados dos outros membros
+  const sharedPatientIds = []
+  
+  // Firestore limita 'in' a 30 valores, então dividimos em chunks
+  const memberChunks = []
+  for (let i = 0; i < otherMemberIds.length; i += 30) {
+    memberChunks.push(otherMemberIds.slice(i, i + 30))
+  }
+
+  for (const chunk of memberChunks) {
+    const sharedPatientsQuery = query(
+      collection(db, 'patients'),
+      where('userId', 'in', chunk),
+      where('isShared', '==', true)
+    )
+    
+    const sharedPatientsSnapshot = await getDocs(sharedPatientsQuery)
+    sharedPatientIds.push(...sharedPatientsSnapshot.docs.map(doc => doc.id))
+  }
+
+  // Se não há pacientes compartilhados, retorna apenas os próprios
+  if (sharedPatientIds.length === 0) {
+    return ownDocuments
+  }
+
+  // 3. Buscar documentos vinculados a pacientes compartilhados
+  const sharedDocuments = []
+  
+  // Dividir patientIds em chunks de 30 (limite do Firestore para 'in')
+  const patientChunks = []
+  for (let i = 0; i < sharedPatientIds.length; i += 30) {
+    patientChunks.push(sharedPatientIds.slice(i, i + 30))
+  }
+
+  for (const chunk of patientChunks) {
+    const sharedDocsQuery = query(
+      collection(db, 'documents'),
+      where('patientId', 'in', chunk),
+      orderBy('uploadedAt', 'desc')
+    )
+    
+    const sharedDocsSnapshot = await getDocs(sharedDocsQuery)
+    
+    // Filtrar para não duplicar documentos próprios
+    const newDocs = sharedDocsSnapshot.docs
+      .filter(docSnap => docSnap.data().userId !== userId)
+      .map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+        isOwn: false,
+        isShared: true
+      }))
+    
+    sharedDocuments.push(...newDocs)
+  }
+
+  // 4. Combinar e ordenar por data de upload
+  const allDocuments = [...ownDocuments, ...sharedDocuments]
+  allDocuments.sort((a, b) => {
+    const dateA = a.uploadedAt?.toDate?.() || new Date(a.uploadedAt) || new Date(0)
+    const dateB = b.uploadedAt?.toDate?.() || new Date(b.uploadedAt) || new Date(0)
+    return dateB - dateA
+  })
+
+  return allDocuments
+}
+
 // ============ HELPERS ============
 
 /**
