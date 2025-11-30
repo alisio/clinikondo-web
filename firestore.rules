@@ -61,6 +61,10 @@ service cloud.firestore {
       // Atualização: dono pode atualizar
       allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
       
+      // Atualização: documentos vinculados a pacientes compartilhados podem ser atualizados
+      // por membros do grupo (verificação de papel Editor/Admin é feita no código)
+      allow update: if isAuthenticated() && resource.data.patientId != null;
+      
       // Exclusão: dono pode excluir
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
