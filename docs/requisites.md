@@ -340,6 +340,7 @@ A "família" — pessoas cujos exames você guarda (você, filhos, esposa, etc.)
 | **aliases** | Apelidos/variações do nome (ex: "Mariazinha", "Mimi") | ✗ |
 | **dateOfBirth** | Data de nascimento | ✗ |
 | **relationship** | Parentesco (você mesmo, esposa, filho, pai, etc.) | ✗ |
+| **isShared** | Se o paciente é visível para membros do grupo familiar (RF20) | ✗ |
 | **createdAt** | Quando foi cadastrado | ✓ |
 | **updatedAt** | Última vez que editou | ✓ |
 | **documentCount** | Quantos exames essa pessoa tem | ✓ |
@@ -381,6 +382,7 @@ Você envia → Processando → Pronto (com informações extraídas)
 | **extractedContent** | Texto que a IA leu do documento | ✓ |
 | **extractedMetadata** | Dados estruturados que a IA extraiu (backup) | ✓ |
 | **tags** | Palavras-chave extraídas pela IA (ex: ["dipirona", "febre", "antitérmico"]) | ✓ |
+| **manualTags** | Tags adicionadas manualmente pelo usuário (RF18) | ✗ |
 | **suggestedPatients** | Sugestões de quem é o paciente: "Pode ser Maria (95% certeza)" | ✓ |
 | **uploadedAt** | Data/hora que enviou | ✓ |
 | **processedAt** | Data/hora que terminou de processar | ✗ |
@@ -395,9 +397,11 @@ Você envia → Processando → Pronto (com informações extraídas)
 - Tipos válidos: Exame, Receita, Laudo, Vacina, Outro
 - O sistema busca documentos rápido por: status, data, confiança, paciente
 
-3.4 Fila de Processamento (processingQueue)
+3.4 Fila de Processamento (processingQueue) [Client-Side]
 
-**O que é?** É como um "lista de tarefas" do sistema enquanto processa seus documentos.
+**O que é?** É como uma "lista de tarefas" do sistema enquanto processa seus documentos.
+
+**Nota de implementação:** Esta fila é gerenciada no navegador (client-side) via React Context, não é persistida no Firestore.
 
 **Analogia:** Você escreve tarefas em um adesivo na sua mesa. Conforme faz, marca como pronto.
 
@@ -435,9 +439,11 @@ Você envia → Processando → Pronto (com informações extraídas)
 
 ---
 
-3.6 Grupos Familiares (familyGroups) [Futuro - v2]
+3.6 Grupos Familiares (familyGroups)
 
 **O que é?** Permite que múltiplos usuários (ex: pai e mãe) compartilhem acesso aos documentos médicos da família.
+
+**Status:** Implementado na versão 1.0.
 
 **Analogia:** Como uma pasta compartilhada no Google Drive — várias pessoas podem ver os mesmos arquivos.
 
@@ -450,9 +456,11 @@ Você envia → Processando → Pronto (com informações extraídas)
 | **createdAt** | Data de criação | ✓ |
 | **updatedAt** | Última modificação | ✓ |
 
-3.7 Membros do Grupo (familyMembers) [Futuro - v2]
+3.7 Membros do Grupo (familyMembers)
 
 **O que é?** Detalha as permissões de cada membro dentro do grupo familiar.
+
+**Status:** Implementado na versão 1.0.
 
 | Campo | O que é | Obrigatório |
 |-------|--------|-------------|
@@ -482,7 +490,7 @@ Você (users)
 └─ Sua fila de processamento
 ```
 
-**Exemplo real (com grupo familiar - v2):**
+**Exemplo real (com grupo familiar):**
 ```
 Grupo: Família Silva
 ├─ Admin: João Silva (pai)
@@ -621,9 +629,9 @@ Navegação estruturada: Paciente -> Tipo de Documento.
 
 RF12
 
-Busca Global
+Busca e Filtros
 
-Barra de pesquisa acessível facilmente na página principal (Dashboard) para filtrar documentos por nome, tipo, especialidade ou conteúdo de texto extraído em tempo real.
+Barra de pesquisa e filtros na página de Arquivos para filtrar documentos por nome, tipo, especialidade, paciente ou conteúdo de texto extraído. Inclui busca semântica com expansão de sinônimos médicos.
 
 RF13
 
@@ -667,7 +675,7 @@ O sistema deve permitir ao usuário adicionar, editar e remover tags manualmente
 - Máximo de 20 tags por documento (automáticas + manuais)
 - Cada tag deve ter no máximo 50 caracteres
 
-Módulo 5: Compartilhamento Familiar [Futuro - v2]
+Módulo 5: Compartilhamento Familiar
 
 ID
 
