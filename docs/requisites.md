@@ -435,6 +435,43 @@ Você envia → Processando → Pronto (com informações extraídas)
 
 ---
 
+3.6 Grupos Familiares (familyGroups) [Futuro - v2]
+
+**O que é?** Permite que múltiplos usuários (ex: pai e mãe) compartilhem acesso aos documentos médicos da família.
+
+**Analogia:** Como uma pasta compartilhada no Google Drive — várias pessoas podem ver os mesmos arquivos.
+
+| Campo | O que é | Obrigatório |
+|-------|--------|-------------|
+| **id** | Número único do grupo | ✓ |
+| **name** | Nome do grupo (ex: "Família Silva") | ✓ |
+| **ownerId** | ID do administrador (quem criou) | ✓ |
+| **memberIds** | Lista de IDs dos membros | ✓ |
+| **createdAt** | Data de criação | ✓ |
+| **updatedAt** | Última modificação | ✓ |
+
+3.7 Membros do Grupo (familyMembers) [Futuro - v2]
+
+**O que é?** Detalha as permissões de cada membro dentro do grupo familiar.
+
+| Campo | O que é | Obrigatório |
+|-------|--------|-------------|
+| **id** | Número único | ✓ |
+| **groupId** | Qual grupo | ✓ |
+| **userId** | Qual usuário | ✓ |
+| **role** | Papel: admin, editor, viewer | ✓ |
+| **invitedBy** | Quem convidou | ✓ |
+| **invitedAt** | Quando foi convidado | ✓ |
+| **acceptedAt** | Quando aceitou o convite | ✗ |
+| **status** | pending, active, removed | ✓ |
+
+**Regras:**
+- Só o `admin` pode convidar/remover membros
+- `editor` pode fazer upload e editar documentos
+- `viewer` só pode visualizar e baixar
+
+---
+
 **Como tudo se conecta?**
 
 ```
@@ -443,6 +480,19 @@ Você (users)
 ├─ Seus pacientes (patients)
 │  └─ Documentos deles
 └─ Sua fila de processamento
+```
+
+**Exemplo real (com grupo familiar - v2):**
+```
+Grupo: Família Silva
+├─ Admin: João Silva (pai)
+├─ Membro: Ana Silva (mãe) - role: editor
+│
+├─ Paciente 1: João Junior (filho) - visível para grupo
+│  └─ Documentos compartilhados
+│
+└─ Paciente 2: João Silva (pai) - privado
+   └─ Documentos só João vê
 ```
 
 **Exemplo real:**
@@ -616,6 +666,61 @@ O sistema deve permitir ao usuário adicionar, editar e remover tags manualmente
 - As tags manuais devem ser diferenciadas visualmente das tags automáticas (ex: ícone ou cor diferente)
 - Máximo de 20 tags por documento (automáticas + manuais)
 - Cada tag deve ter no máximo 50 caracteres
+
+Módulo 5: Compartilhamento Familiar [Futuro - v2]
+
+ID
+
+Requisito
+
+Descrição
+
+RF19
+
+Grupos Familiares
+
+O sistema deve permitir a criação de "Grupos Familiares" onde múltiplos usuários (cada um com sua própria conta) podem compartilhar acesso aos mesmos pacientes e documentos. Funcionalidades:
+- Um usuário cria o grupo e se torna o "administrador"
+- O administrador convida outros membros por email
+- Membros convidados recebem email com link de convite
+- Ao aceitar, o membro passa a ver os pacientes e documentos do grupo
+- Cada membro mantém sua própria conta (login individual)
+- O administrador pode remover membros a qualquer momento
+- Máximo de 10 membros por grupo familiar
+
+RF20
+
+Compartilhamento por Paciente
+
+O sistema deve permitir compartilhamento granular por paciente dentro do grupo familiar:
+- O dono original de um paciente pode escolher se o paciente será visível para todo o grupo ou apenas para si
+- Pacientes marcados como "privados" não aparecem para outros membros do grupo
+- Documentos seguem a visibilidade do paciente ao qual estão vinculados
+- Documentos não vinculados a nenhum paciente são privados por padrão
+- Níveis de permissão por membro:
+  - **Visualizar**: pode ver e baixar documentos
+  - **Editar**: pode adicionar tags, vincular pacientes, editar metadados
+  - **Gerenciar**: pode fazer upload, deletar documentos e editar pacientes
+
+**Regras especiais de visibilidade:**
+- **Paciente-Membro**: Quando um paciente representa um membro do grupo (ex: "Ana Silva" é paciente E membro), o membro sempre tem acesso aos seus próprios documentos, independente de quem fez o upload ou da configuração de privacidade
+- **Visibilidade para terceiros**: A configuração "privado/compartilhado" define apenas se OUTROS membros do grupo (que não são o próprio paciente) podem ver os documentos
+- **Upload cruzado**: Qualquer membro com permissão "Gerenciar" pode fazer upload para qualquer paciente compartilhado do grupo; o documento fica automaticamente visível para o paciente-membro (se aplicável) e para o grupo (se paciente for compartilhado)
+
+**Exemplo prático:**
+```
+Grupo: Família Silva
+├─ Membro: João (admin)
+├─ Membro: Ana (editor) ←→ Paciente: Ana Silva
+├─ Paciente: Filho João Jr (compartilhado)
+└─ Paciente: João (privado)
+
+Cenário: João faz upload de exame para "Ana Silva"
+→ Ana vê: SIM (é sobre ela)
+→ João vê: SIM (fez upload)
+→ Se Ana for "compartilhada": outros membros também veem
+→ Se Ana for "privada": só Ana e João veem
+```
 
 5. 🔄 Regras de Negócio (RN)
 
