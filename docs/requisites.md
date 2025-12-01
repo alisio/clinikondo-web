@@ -2,7 +2,7 @@
 
 Produto: CliniKondo Web Edition
 
-Versão: 1.2 (UI Fixes)
+Versão: 1.3 (Thumbnails Visuais)
 
 Data: 1 de Dezembro de 2025
 
@@ -31,11 +31,11 @@ Data: 1 de Dezembro de 2025
 **Como funciona?**
 1. Você envia exames, receitas, laudos
 2. IA lê e classifica automaticamente (tipo, especialidade, data, paciente)
-3. Tudo fica organizado e pesquisável
+3. Tudo fica organizado e pesquisável com **thumbnails visuais** para identificação rápida
 
 **Para quem?** Famílias que têm muitos documentos médicos espalhados.
 
-**Diferencial:** Sem login complicado — email/senha. Processamento rápido (< 6s por doc). Upload em massa inteligente. Seguro (só você vê seus dados).
+**Diferencial:** Sem login complicado — email/senha. Processamento rápido (< 6s por doc). Upload em massa inteligente. **Thumbnails visuais** para melhor identificação. Seguro (só você vê seus dados).
 
 ---
 
@@ -340,7 +340,7 @@ A "família" — pessoas cujos exames você guarda (você, filhos, esposa, etc.)
 | **aliases** | Apelidos/variações do nome (ex: "Mariazinha", "Mimi") | ✗ |
 | **dateOfBirth** | Data de nascimento | ✗ |
 | **relationship** | Parentesco (você mesmo, esposa, filho, pai, etc.) | ✗ |
-| **isShared** | Se o paciente é visível para membros do grupo familiar (RF20) | ✗ |
+| **isShared** | Se o paciente é visível para membros do grupo familiar (RF21) | ✗ |
 | **createdAt** | Quando foi cadastrado | ✓ |
 | **updatedAt** | Última vez que editou | ✓ |
 | **documentCount** | Quantos exames essa pessoa tem | ✓ |
@@ -681,6 +681,18 @@ O sistema deve permitir ao usuário adicionar, editar e remover tags manualmente
 - Máximo de 20 tags por documento (automáticas + manuais)
 - Cada tag deve ter no máximo 50 caracteres
 
+RF19
+
+Thumbnails Visuais de Documentos
+
+O sistema deve gerar e exibir automaticamente uma miniatura visual (thumbnail) para cada documento processado, facilitando a identificação rápida e melhorando a experiência do usuário. Funcionalidades:
+- Para PDFs: Thumbnail da primeira página renderizada em baixa resolução (48x48px)
+- Para imagens: Versão reduzida da imagem original (48x48px, mantendo proporção)
+- Exibição no canto superior esquerdo de cada card de documento na tela de Arquivos
+- Fallback automático: Se thumbnail não carregar, exibir ícone tradicional do tipo de documento
+- Geração automática durante o processamento, sem intervenção do usuário
+- Armazenamento otimizado no Firebase Storage com compressão automática
+
 Módulo 5: Compartilhamento Familiar
 
 ID
@@ -689,7 +701,7 @@ Requisito
 
 Descrição
 
-RF19
+RF20
 
 Grupos Familiares
 
@@ -702,7 +714,7 @@ O sistema deve permitir a criação de "Grupos Familiares" onde múltiplos usuá
 - O administrador pode remover membros a qualquer momento
 - Máximo de 10 membros por grupo familiar
 
-RF20
+RF21
 
 Compartilhamento por Paciente
 
@@ -963,27 +975,29 @@ O sistema deve ser responsivo e dividido em quatro seções principais acessíve
 │  Filtros: [📁 Tipo ▼] [👨‍⚕️ Especialidade ▼] [📅 Data ▼]  │
 │                                                            │
 │  👩 MARIA SILVA  (8 documentos)                            │
-│  ├─ 📄 2025-11-29-maria_silva-exame-cardiologia.pdf      │
+│  ├─ [📄] 2025-11-29-maria_silva-exame-cardiologia.pdf     │
 │  │  Tipo: Exame | Especialidade: Cardiologia             │
 │  │  Data: 29/11/2025 | Confiança: 95% ⭐⭐⭐⭐⭐            │
 │  │  [👁️ Visualizar] [📥 Download] [✎ Editar]            │
 │  │                                                        │
-│  ├─ 💊 2025-11-15-maria_silva-receita-pediatria.jpg      │
+│  ├─ [💊] 2025-11-15-maria_silva-receita-pediatria.jpg     │
 │  │  Tipo: Receita | Especialidade: Pediatria             │
 │  │  Data: 15/11/2025 | Confiança: 88% ⭐⭐⭐⭐             │
 │  │  [👁️ Visualizar] [📥 Download] [✎ Editar]            │
 │  │                                                        │
-│  └─ 🩺 2025-10-03-maria_silva-laudo-oftalmologia.pdf     │
+│  └─ [🩺] 2025-10-03-maria_silva-laudo-oftalmologia.pdf    │
 │     Tipo: Laudo | Especialidade: Oftalmologia             │
 │     Data: 03/10/2025 | Confiança: 92% ⭐⭐⭐⭐⭐           │
 │     [👁️ Visualizar] [📥 Download] [✎ Editar]            │
 │                                                            │
 │  👦 JOÃO JUNIOR SILVA  (12 documentos)                    │
-│  ├─ 💉 2025-10-20-joao_junior-vacina-pediatria.jpg       │
+│  ├─ [💉] 2025-10-20-joao_junior-vacina-pediatria.jpg      │
 │     ...                                                   │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
+
+**Nota:** Os colchetes `[📄]` representam os thumbnails visuais. Na implementação real, são imagens miniatura de 48x48px mostrando preview do documento (primeira página para PDFs, imagem reduzida para fotos). Se o thumbnail não carregar, volta automaticamente para o ícone emoji tradicional.
 
 **Campos visíveis:**
 - Barra de busca
@@ -1260,6 +1274,13 @@ Se você está lendo isso e encontrou um termo desconhecido, este glossário aju
 - Uso: Identificador simples para URLs e banco de dados
 
 ### T
+
+**Thumbnail**
+- O quê: Uma imagem pequena (miniatura) que representa um documento maior
+- Analogia: Como uma foto polaroid pequena de um álbum inteiro
+- Exemplo: Para PDFs, mostra a primeira página reduzida; para fotos, mostra versão pequena
+- Vantagem: Permite identificar documentos rapidamente sem abri-los
+- Tamanho: 48x48 pixels no CliniKondo
 
 **Timeout**
 - O quê: Tempo máximo para algo terminar

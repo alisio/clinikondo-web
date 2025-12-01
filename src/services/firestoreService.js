@@ -184,6 +184,24 @@ export async function createDocument(userId, file, metadata) {
   await uploadBytes(fileRef, file)
   const fileUrl = await getDownloadURL(fileRef)
   
+  // Upload do thumbnail se existir
+  let thumbnailUrl = null
+  if (metadata.thumbnail) {
+    try {
+      // Converte data URL para blob
+      const response = await fetch(metadata.thumbnail)
+      const thumbnailBlob = await response.blob()
+      
+      // Upload thumbnail
+      const thumbnailRef = ref(storage, `users/${userId}/thumbnails/${Date.now()}_thumb_${file.name}.jpg`)
+      await uploadBytes(thumbnailRef, thumbnailBlob)
+      thumbnailUrl = await getDownloadURL(thumbnailRef)
+    } catch (error) {
+      console.warn('Erro ao fazer upload do thumbnail:', error)
+      // Continua sem thumbnail se falhar
+    }
+  }
+  
   const document = {
     userId,
     originalName: file.name,
@@ -196,6 +214,7 @@ export async function createDocument(userId, file, metadata) {
     status: 'completed',
     reviewRequired: metadata.confidence < 75,
     fileUrl,
+    thumbnailUrl, // Novo campo para thumbnail
     fileSize: file.size,
     filePath: fileRef.fullPath,
     extractedContent: metadata.extractedText || '',

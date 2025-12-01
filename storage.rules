@@ -13,6 +13,12 @@ service firebase.storage {
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
     }
     
+    // Thumbnails dos documentos
+    match /users/{userId}/thumbnails/{allPaths=**} {
+      // Somente o próprio usuário pode ler/escrever seus thumbnails
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
     // Avatares/fotos de perfil (opcional)
     match /users/{userId}/profile/{allPaths=**} {
       allow read: if true; // Público

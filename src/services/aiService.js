@@ -258,13 +258,111 @@ export async function processDocument(file, onProgress) {
   
   onProgress?.({ stage: 'classifying', progress: 80 })
 
+  // Etapa 4: Gerar thumbnail (RF: Preview visual)
+  onProgress?.({ stage: 'generating_thumbnail', progress: 95 })
+  const thumbnail = await generateDocumentThumbnail(file)
+
   return {
     extractedText,
     classification,
+    thumbnail, // Data URL do thumbnail
     usedVision,
     processingDetails: {
       textLength: extractedText.length,
       extractionMethod: usedVision ? 'vision' : 'native',
     },
   }
+}
+
+/**
+ * Gera thumbnail do documento para preview
+ * @param {File} file - Arquivo do documento
+ * @returns {Promise<string|null>} Data URL do thumbnail ou null se falhar
+ */
+export async function generateDocumentThumbnail(file) {
+  try {
+    if (file.type === 'application/pdf') {
+      return await generatePDFThumbnail(file)
+    } else if (file.type.startsWith('image/')) {
+      return await generateImageThumbnail(file)
+    }
+    return null
+  } catch (error) {
+    console.warn('Erro ao gerar thumbnail:', error)
+    return null
+  }
+}
+
+/**
+ * Gera thumbnail da primeira página de um PDF
+ * @param {File} file - Arquivo PDF
+ * @returns {Promise<string>} Data URL do thumbnail
+ */
+async function generatePDFThumbnail(file) {
+  // Configurar worker do PDF.js
+  const pdfjsLib = await import('pdfjs-dist')
+  // Usar worker da pasta public
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+  
+  const { getDocument } = await import('pdfjs-dist')
+
+  const arrayBuffer = await file.arrayBuffer()
+  const pdf = await getDocument({ data: arrayBuffer }).promise
+  
+  // Renderizar primeira página
+  const page = await pdf.getPage(1)
+  const viewport = page.getViewport({ scale: 0.3 }) // Escala reduzida para thumbnail
+  
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
+  canvas.height = viewport.height
+  canvas.width = viewport.width
+  
+  const renderContext = {
+    canvasContext: context,
+    viewport: viewport,
+  }
+  
+  await page.render(renderContext).promise
+  return canvas.toDataURL('image/jpeg', 0.8)
+}
+
+/**
+ * Gera thumbnail de uma imagem
+ * @param {File} file - Arquivo de imagem
+ * @returns {Promise<string>} Data URL do thumbnail
+ */
+async function generateImageThumbnail(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    
+    img.onload = () => {
+      // Calcular dimensões mantendo proporção
+      const maxSize = 150
+      let { width, height } = img
+      
+      if (width > height) {
+        if (width > maxSize) {
+          height = (height * maxSize) / width
+          width = maxSize
+        }
+      } else {
+        if (height > maxSize) {
+          width = (width * maxSize) / height
+          height = maxSize
+        }
+      }
+      
+      canvas.width = width
+      canvas.height = height
+      
+      ctx.drawImage(img, 0, 0, width, height)
+      resolve(canvas.toDataURL('image/jpeg', 0.8))
+    }
+    
+    img.onerror = reject
+    img.src = URL.createObjectURL(file)
+  })
 }

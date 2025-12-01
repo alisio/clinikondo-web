@@ -395,6 +395,7 @@ export default function ProcessorPage() {
           patientId: linkedPatientId,
           extractedText: result.extractedText,
           classification: result.classification,
+          thumbnail: result.thumbnail, // Thumbnail gerado
           tags: processExtractedTags(result.classification?.tags || []), // RF16: Tags automáticas
           suggestedPatients: suggestedPatients.map(sp => ({
             patientId: sp.patient.id,

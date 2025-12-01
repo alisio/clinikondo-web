@@ -152,7 +152,26 @@ function DocumentCard({ document, patient, patients, onView, onDelete, onLink })
   return (
     <div className="card p-4 hover:border-primary-200 transition-colors">
       <div className="flex items-start gap-4">
-        <DocumentIcon type={document.type} />
+        {/* Thumbnail ou ícone */}
+        {document.thumbnailUrl ? (
+          <div className="doc-icon flex-shrink-0">
+            <img 
+              src={document.thumbnailUrl} 
+              alt="Preview" 
+              className="w-12 h-12 object-cover rounded-lg border border-gray-200"
+              onError={(e) => {
+                // Fallback para ícone se thumbnail falhar
+                e.target.style.display = 'none'
+                e.target.nextSibling.style.display = 'flex'
+              }}
+            />
+            <div className="hidden">
+              <DocumentIcon type={document.type} />
+            </div>
+          </div>
+        ) : (
+          <DocumentIcon type={document.type} />
+        )}
         
         <div className="flex-1 min-w-0">
           <h4 className="font-medium text-gray-900 truncate" title={document.finalName}>

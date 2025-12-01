@@ -11,8 +11,8 @@ Plataforma de organização médica pessoal que transforma arquivos digitais des
 - **Busca Semântica com Sinônimos** (RF17): Expansão de buscas com vocabulário médico
 - **Tags Automáticas** (RF16): Classificação de documentos com tags baseadas em IA
 - **Gerenciamento de Tags** (RF18): Adição, remoção e customização manual de tags
-- **Grupos Familiares** (RF19): Criação de grupos para compartilhar documentos entre múltiplos usuários
-- **Compartilhamento por Paciente** (RF20): Controle granular de visibilidade por paciente dentro do grupo
+- **Grupos Familiares** (RF20): Criação de grupos para compartilhar documentos entre múltiplos usuários
+- **Compartilhamento por Paciente** (RF21): Controle granular de visibilidade por paciente dentro do grupo
 - **Organização Hierárquica**: Visualização de documentos agrupados por paciente
 - **Download Padronizado**: Arquivos renomeados no formato `AAAA-MM-DD-paciente-tipo-especialidade.ext`
 
@@ -152,9 +152,9 @@ service cloud.firestore {
 ```
 src/
 ├── components/                    # Componentes reutilizáveis
-│   ├── FamilyGroupManager.jsx     # Gerenciamento de grupos familiares (RF19)
+│   ├── FamilyGroupManager.jsx     # Gerenciamento de grupos familiares (RF20)
 │   ├── PatientMatchModal.jsx      # Modal de vinculação de pacientes
-│   ├── PatientSharingSettings.jsx # Configurações de compartilhamento (RF20)
+│   ├── PatientSharingSettings.jsx # Configurações de compartilhamento (RF21)
 │   ├── TagManager.jsx             # Gerenciador de tags (RF18)
 │   └── ui/                        # Componentes UI primitivos
 │       ├── EmptyState.jsx
@@ -163,7 +163,7 @@ src/
 │       └── Spinner.jsx
 ├── contexts/                      # React Context
 │   ├── AuthContext.jsx            # Autenticação e perfil do usuário
-│   ├── FamilyContext.jsx          # Estado do grupo familiar (RF19)
+│   ├── FamilyContext.jsx          # Estado do grupo familiar (RF20)
 │   └── ProcessingContext.jsx      # Fila de processamento de documentos
 ├── layouts/                       # Layouts de página
 │   ├── AuthLayout.jsx             # Layout para páginas de autenticação
@@ -181,7 +181,7 @@ src/
 ├── services/                      # Serviços e integrações
 │   ├── aiService.js               # Classificação por IA e extração de tags
 │   ├── extractionService.js       # Extração de texto de PDFs
-│   ├── familyService.js           # Operações de grupos familiares (RF19, RF20)
+│   ├── familyService.js           # Operações de grupos familiares (RF20, RF21)
 │   └── firestoreService.js        # Operações CRUD Firestore
 ├── App.jsx                        # Router principal
 ├── main.jsx                       # Entry point
