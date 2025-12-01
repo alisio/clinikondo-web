@@ -2,7 +2,7 @@
 
 Produto: CliniKondo Web Edition
 
-Versão: 1.1 (Upload em Massa)
+Versão: 1.2 (UI Fixes)
 
 Data: 1 de Dezembro de 2025
 
@@ -993,6 +993,12 @@ O sistema deve ser responsivo e dividido em quatro seções principais acessíve
 - Metadados: tipo, especialidade, data, confiança
 - Ícones de status (⭐ = confiança visual)
 - Botões: Visualizar, Download, Editar
+
+**Interações:**
+- **Grupos expansíveis:** Clique no cabeçalho para expandir/colapsar documentos por paciente
+- **Vinculação manual:** Dropdown em documentos não vinculados permite seleção de paciente
+- **Filtros dinâmicos:** Atualização em tempo real da lista conforme filtros
+- **Navegação modal:** Visualização detalhada abre em modal overlay
 
 ---
 

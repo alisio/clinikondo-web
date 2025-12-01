@@ -197,7 +197,7 @@ function DocumentCard({ document, patient, patients, onView, onDelete, onLink })
                 </button>
                 
                 {showLinkMenu && (
-                  <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 min-w-[200px]">
+                  <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 min-w-[200px]">
                     {patients.map(p => (
                       <button
                         key={p.id}
@@ -553,7 +553,7 @@ export default function FilesPage() {
       ) : (
         <div className="space-y-4">
           {groupedDocuments.map(([groupId, group]) => (
-            <div key={groupId} className="card overflow-hidden">
+            <div key={groupId} className="card">
               {/* Cabeçalho do grupo */}
               <button
                 onClick={() => togglePatientExpand(groupId)}
