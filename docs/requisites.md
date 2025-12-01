@@ -2,9 +2,9 @@
 
 Produto: CliniKondo Web Edition
 
-Versão: 1.0 (Release SPA)
+Versão: 1.1 (Upload em Massa)
 
-Data: 19 de Novembro de 2025
+Data: 1 de Dezembro de 2025
 
 ---
 
@@ -35,7 +35,7 @@ Data: 19 de Novembro de 2025
 
 **Para quem?** Famílias que têm muitos documentos médicos espalhados.
 
-**Diferencial:** Sem login complicado — email/senha. Processamento rápido (< 6s por doc). Seguro (só você vê seus dados).
+**Diferencial:** Sem login complicado — email/senha. Processamento rápido (< 6s por doc). Upload em massa inteligente. Seguro (só você vê seus dados).
 
 ---
 
@@ -174,7 +174,7 @@ Inteligência Artificial: Integração com APIs de LLM (ex: OpenAI GPT-4) para c
   "document_metadata": {
     "issued_date": "2025-11-29",
     "extraction_quality": "high",
-    "is_handwritten": false,
+    "is_handwritten": false, 
     "language": "pt-BR"
   }
 }
@@ -613,6 +613,12 @@ Associação Automática
 
 O sistema deve cruzar nomes encontrados no documento com a lista de Pacientes/Aliases para sugerir o dono do arquivo.
 
+RF11
+
+Upload em Massa com Paciente Pré-selecionado
+
+O usuário deve poder selecionar um paciente antes do upload, fazendo com que todos os documentos enviados sejam automaticamente associados a esse paciente, pulando o processo de matching automático e confirmação manual.
+
 Módulo 4: Arquivo Digital (Dashboard)
 
 ID
@@ -728,6 +734,12 @@ Cenário: João faz upload de exame para "Ana Silva"
 → João vê: SIM (fez upload)
 → Se Ana for "compartilhada": outros membros também veem
 → Se Ana for "privada": só Ana e João veem
+
+Cenário: João faz upload em massa de 50 exames para "Maria Silva"
+→ Seleciona Maria no seletor antes do upload
+→ Todos os 50 documentos são processados automaticamente
+→ Nenhum modal de confirmação aparece
+→ Todos ficam vinculados a Maria sem intervenção manual
 ```
 
 5. 🔄 Regras de Negócio (RN)
@@ -824,10 +836,14 @@ O sistema deve ser responsivo e dividido em quatro seções principais acessíve
 
 6.3 Tela 2: Smart Processor (Upload & Fila)
 
-**Propósito:** Onde o "trabalho" acontece — enviar e acompanhar processamento.
+**Propósito:** Onde o "trabalho" acontece — enviar e acompanhar processamento. Permite upload em massa com paciente pré-selecionado para eficiência.
 
 ```
 ┌─ Smart Processor ────────────────────────────────────────┐
+│                                                           │
+│  👤 PACIENTE PARA UPLOAD EM MASSA (opcional)             │
+│  [Selecionar paciente ▼]                                 │
+│  └─ Todos os documentos serão vinculados a: Maria Silva │
 │                                                           │
 │  📤 ARRASTAR E SOLTAR                                    │
 │  ╔════════════════════════════════════════════════════╗  │
@@ -876,7 +892,15 @@ O sistema deve ser responsivo e dividido em quatro seções principais acessíve
 - Botões de ação (Ver, Cancelar, Retry)
 - Ícones para status (✅, ⏳, ❌)
 
----
+**Interações:**
+- **Selecionar paciente (opcional):** Antes do upload, escolher um paciente para associar automaticamente todos os documentos enviados
+- **Upload em massa:** Arrastar múltiplos arquivos simultaneamente
+- **Monitoramento em tempo real:** Acompanhar progresso de cada documento na fila
+
+**Benefícios do Upload em Massa:**
+- Eficiência: Processar 100+ documentos sem confirmação individual
+- Precisão: Evitar erros de matching automático para pacientes com nomes similares
+- Rapidez: Vinculação direta quando paciente é conhecido previamente
 
 6.4 Tela 3: Pacientes (Gestão de Família)
 
@@ -1314,6 +1338,10 @@ R: A IA está 85% certa sobre aquela classificação. Exemplo:
 **P: Posso tentar novamente um documento que falhou?**
 
 R: Sim. Tem um botão "Retry" na fila de processamento que tenta reprocessar até 3 vezes.
+
+**P: Como funciona o upload em massa para um paciente específico?**
+
+R: Antes de enviar os arquivos, selecione o paciente no menu dropdown "Paciente (opcional)". Todos os documentos enviados serão automaticamente vinculados a esse paciente, pulando a etapa de confirmação manual. Ideal para organizar exames de uma consulta ou laboratório.
 
 ---
 

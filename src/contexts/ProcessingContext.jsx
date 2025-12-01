@@ -35,12 +35,12 @@ export function ProcessingProvider({ children }) {
 
   // Adicionar item à fila (RF08)
   const addToQueue = useCallback((files) => {
-    const newItems = files.map((file, index) => ({
+    const newItems = files.map((enhanced, index) => ({
       id: `${Date.now()}-${index}`,
-      file,
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
+      file: enhanced.originalFile,
+      fileName: enhanced.originalFile.name,
+      fileSize: enhanced.originalFile.size,
+      fileType: enhanced.originalFile.type,
       status: DocumentStatus.PENDING,
       progress: 0,
       stage: null,
@@ -48,6 +48,8 @@ export function ProcessingProvider({ children }) {
       error: null,
       retryCount: 0,
       createdAt: new Date(),
+      preSelectedPatientId: enhanced.preSelectedPatientId,
+      preSelectedPatient: enhanced.preSelectedPatient,
     }))
 
     setQueue(prev => [...prev, ...newItems])

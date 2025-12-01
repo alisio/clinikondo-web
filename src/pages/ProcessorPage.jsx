@@ -63,6 +63,14 @@ function QueueItem({ item, onRetry, onRemove, onView, onSelectPatient }) {
             <span className="text-xs text-gray-500">{formatFileSize(item.fileSize)}</span>
           </div>
           
+          {/* Paciente pré-selecionado */}
+          {item.preSelectedPatient && item.preSelectedPatient.id && (
+            <div className="flex items-center gap-1 text-sm text-primary-600 mt-1">
+              <User className="w-3 h-3" />
+              <span>{item.preSelectedPatient.name} (pré-selecionado)</span>
+            </div>
+          )}
+          
           <p className="text-sm text-gray-600 mt-1">{stageLabels[item.status]}</p>
 
           {/* Barra de progresso */}
@@ -84,7 +92,7 @@ function QueueItem({ item, onRetry, onRemove, onView, onSelectPatient }) {
                 Confiança: {item.result.classification?.classification?.confidence}%
               </span>
               {item.result.linkedPatient && (
-                <span className="ml-2 flex items-center gap-1 inline-flex text-gray-600">
+                <span className="ml-2 flex items-center gap-1 text-gray-600">
                   <User className="w-3 h-3" />
                   {item.result.linkedPatient.name}
                 </span>
@@ -170,6 +178,7 @@ export default function ProcessorPage() {
   
   const [patients, setPatients] = useState([])
   const [processing, setProcessing] = useState(false)
+  const [preSelectedPatient, setPreSelectedPatient] = useState(null)
   
   // Modal de confirmação de paciente
   const [confirmationModal, setConfirmationModal] = useState({
@@ -306,56 +315,64 @@ export default function ProcessorPage() {
         // Matching de paciente
         updateItem(item.id, { status: DocumentStatus.MATCHING, progress: 80 })
         
-        const extractedNames = result.classification?.patient_names || []
-        let suggestedPatients = []
-        let extractedPatientName = ''
-        
-        for (const nameInfo of extractedNames) {
-          if (nameInfo.role === 'paciente') {
-            extractedPatientName = nameInfo.name
-            const matches = findPossiblePatients(nameInfo.name, patients)
-            suggestedPatients = [...suggestedPatients, ...matches]
-          }
-        }
-        
-        // Remover duplicatas (mesmo paciente pode aparecer múltiplas vezes)
-        const uniquePatients = new Map()
-        for (const sp of suggestedPatients) {
-          if (!uniquePatients.has(sp.patient.id) || uniquePatients.get(sp.patient.id).confidence < sp.confidence) {
-            uniquePatients.set(sp.patient.id, sp)
-          }
-        }
-        suggestedPatients = Array.from(uniquePatients.values())
-
-        // Verificar se precisa confirmação
-        if (needsPatientConfirmation(suggestedPatients)) {
-          // Pausar e aguardar confirmação do usuário
-          updateItem(item.id, { 
-            status: DocumentStatus.AWAITING_CONFIRMATION,
-            progress: 85,
-            pendingResult: result,
-            suggestedPatients,
-          })
-          
-          // Abrir modal automaticamente
-          setConfirmationModal({
-            isOpen: true,
-            item: { ...item, pendingResult: result, suggestedPatients },
-            suggestedPatients,
-            extractedName: extractedPatientName,
-          })
-          
-          // Não continua - aguarda callback do modal
-          return
-        }
-
-        // Determinar paciente (auto-link se confiança >= 90%)
+        // Determinar paciente
         let linkedPatientId = null
         let linkedPatient = null
+        let suggestedPatients = []
         
-        if (suggestedPatients.length === 1 && suggestedPatients[0].confidence >= 90) {
-          linkedPatientId = suggestedPatients[0].patient.id
-          linkedPatient = suggestedPatients[0].patient
+        // Se paciente foi pré-selecionado, usar diretamente (pula matching)
+        if (item.preSelectedPatient && item.preSelectedPatient.id) {
+          linkedPatientId = item.preSelectedPatient.id
+          linkedPatient = item.preSelectedPatient
+        } else {
+          // Lógica de matching automático
+          const extractedNames = result.classification?.patient_names || []
+          let extractedPatientName = ''
+          
+          for (const nameInfo of extractedNames) {
+            if (nameInfo.role === 'paciente') {
+              extractedPatientName = nameInfo.name
+              const matches = findPossiblePatients(nameInfo.name, patients)
+              suggestedPatients = [...suggestedPatients, ...matches]
+            }
+          }
+          
+          // Remover duplicatas (mesmo paciente pode aparecer múltiplas vezes)
+          const uniquePatients = new Map()
+          for (const sp of suggestedPatients) {
+            if (!uniquePatients.has(sp.patient.id) || uniquePatients.get(sp.patient.id).confidence < sp.confidence) {
+              uniquePatients.set(sp.patient.id, sp)
+            }
+          }
+          suggestedPatients = Array.from(uniquePatients.values())
+
+          // Verificar se precisa confirmação
+          if (needsPatientConfirmation(suggestedPatients)) {
+            // Pausar e aguardar confirmação do usuário
+            updateItem(item.id, { 
+              status: DocumentStatus.AWAITING_CONFIRMATION,
+              progress: 85,
+              pendingResult: result,
+              suggestedPatients,
+            })
+            
+            // Abrir modal automaticamente
+            setConfirmationModal({
+              isOpen: true,
+              item: { ...item, pendingResult: result, suggestedPatients },
+              suggestedPatients,
+              extractedName: extractedPatientName,
+            })
+            
+            // Não continua - aguarda callback do modal
+            return
+          }
+
+          // Auto-link se confiança >= 90%
+          if (suggestedPatients.length === 1 && suggestedPatients[0].confidence >= 90) {
+            linkedPatientId = suggestedPatients[0].patient.id
+            linkedPatient = suggestedPatients[0].patient
+          }
         }
 
         // Gerar nome final
@@ -437,10 +454,17 @@ export default function ProcessorPage() {
     }
 
     if (validFiles.length > 0) {
-      addToQueue(validFiles)
+      // Adicionar paciente pré-selecionado aos arquivos
+      const enhancedFiles = validFiles.map(file => ({
+        originalFile: file,
+        preSelectedPatientId: preSelectedPatient?.id,
+        preSelectedPatient: preSelectedPatient,
+      }))
+      
+      addToQueue(enhancedFiles)
       toast.success(`${validFiles.length} arquivo(s) adicionado(s) à fila`)
     }
-  }, [addToQueue])
+  }, [addToQueue, preSelectedPatient])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -468,6 +492,43 @@ export default function ProcessorPage() {
         <p className="text-gray-500 mt-1">
           Envie documentos médicos para processamento automático com IA
         </p>
+      </div>
+
+      {/* Seletor de paciente para upload em massa */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <label className="label">Paciente (opcional - para upload em massa)</label>
+            <select
+              value={preSelectedPatient?.id || ''}
+              onChange={(e) => {
+                const patientId = e.target.value
+                const patient = patients.find(p => p.id === patientId) || null
+                setPreSelectedPatient(patient)
+              }}
+              className="input"
+            >
+              <option value="">Selecionar paciente...</option>
+              {patients.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          {preSelectedPatient && (
+            <button
+              onClick={() => setPreSelectedPatient(null)}
+              className="mt-6 px-3 py-2 text-sm text-gray-500 hover:text-gray-700"
+            >
+              Limpar
+            </button>
+          )}
+        </div>
+        {preSelectedPatient && (
+          <p className="text-sm text-primary-600 mt-2 flex items-center gap-1">
+            <User className="w-4 h-4" />
+            Todos os documentos enviados serão vinculados a <strong>{preSelectedPatient.name}</strong>
+          </p>
+        )}
       </div>
 
       {/* Dropzone */}
