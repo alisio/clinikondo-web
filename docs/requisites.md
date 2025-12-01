@@ -579,7 +579,7 @@ RF06
 
 Visualização de Família
 
-Interface em formato de cards listando todos os membros cadastrados.
+Interface em formato de cards listando todos os membros cadastrados. Cada card deve ser clicável, navegando diretamente para a tela de arquivos filtrada por aquele paciente.
 
 Módulo 3: Processamento Inteligente
 
@@ -880,7 +880,7 @@ O sistema deve ser responsivo e dividido em quatro seções principais acessíve
 
 6.4 Tela 3: Pacientes (Gestão de Família)
 
-**Propósito:** Criar, editar, gerenciar membros da família.
+**Propósito:** Criar, editar, gerenciar membros da família e acessar seus documentos rapidamente.
 
 ```
 ┌─ Pacientes ──────────────────────────────────────────────┐
@@ -921,6 +921,10 @@ O sistema deve ser responsivo e dividido em quatro seções principais acessíve
 - Apelidos (com opção de adicionar/remover)
 - Contador de documentos
 - Botões: Editar, Adicionar
+
+**Interações:**
+- **Clique no card do paciente:** Navega diretamente para a tela "Arquivos" filtrada por aquele paciente
+- Permite acesso rápido aos documentos de um paciente específico sem precisar buscar manualmente
 
 ---
 
