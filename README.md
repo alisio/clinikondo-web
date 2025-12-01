@@ -79,6 +79,30 @@ No console do Firebase:
 npm run dev
 ```
 
+## 🐳 Execução com Docker
+
+Para uma experiência mais simples e isolamento completo, use Docker:
+
+### Pré-requisitos para Docker
+- Docker instalado
+- Docker Compose (opcional)
+
+### Método Rápido (Recomendado)
+```bash
+# Build e execução automática com todas as configurações
+./run-docker.sh
+```
+
+### Docker Compose
+```bash
+# Build e executar em background
+docker-compose up -d --build
+```
+
+A aplicação estará disponível em: http://localhost:8080
+
+> 📖 **Para instruções completas sobre Docker**, consulte [README-Docker.md](README-Docker.md)
+
 ## Regras de Segurança (Firestore)
 
 ```javascript
