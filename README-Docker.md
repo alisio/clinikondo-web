@@ -11,7 +11,9 @@ Este documento explica como executar a aplicação CliniKondo Web usando Docker.
 
 ### 1. Configurar Variáveis de Ambiente
 
-Copie o arquivo de exemplo e configure suas credenciais:
+**IMPORTANTE: Nunca use chaves de API reais em repositórios públicos!**
+
+Copie o arquivo de exemplo e configure suas próprias credenciais:
 
 ```bash
 cp .env.docker.example .env.docker
@@ -22,7 +24,49 @@ Edite `.env.docker` com suas próprias credenciais:
 - **LLM API**: Configure sua chave da API de IA
 - **Outros**: Ajuste URLs e configurações conforme necessário
 
-> ⚠️ **IMPORTANTE**: Nunca commite o arquivo `.env.docker` com credenciais reais!
+> ⚠️ **SEGURANÇA**: O arquivo `.env.docker` contém credenciais sensíveis e NÃO deve ser commitado no Git!
+
+### 2. Verificar Configuração
+
+Execute o script de verificação:
+```bash
+./run-docker.sh
+```
+
+O script irá:
+- ✅ Verificar se `.env.docker` existe
+- ✅ Carregar as variáveis de ambiente
+- 🏗️ Fazer build da imagem com suas credenciais
+- 🚀 Executar o container
+
+## 🔒 Segurança e Boas Práticas
+
+### ⚠️ Proteção de Credenciais
+
+**Nunca exponha chaves de API em repositórios públicos!**
+
+- ❌ **Evite**: Comitar arquivos com chaves reais
+- ❌ **Evite**: Hardcoded credentials em scripts
+- ✅ **Recomendado**: Use arquivos `.env` locais (ignorados pelo Git)
+- ✅ **Recomendado**: Configure restrições nas chaves de API
+
+### 🛡️ Medidas de Segurança Recomendadas
+
+1. **Restrições de API Key no Firebase**:
+   - Acesse [Google Cloud Console](https://console.cloud.google.com/)
+   - Vá para "APIs & Services" > "Credentials"
+   - Edite sua API Key e adicione restrições:
+     - **Application restrictions**: HTTP referrers
+     - **API restrictions**: Firebase services only
+
+2. **Monitoramento de Uso**:
+   - Monitore o uso da API no Firebase Console
+   - Configure alertas para uso suspeito
+   - Revogue chaves comprometidas imediatamente
+
+3. **Rotação de Chaves**:
+   - Gire chaves regularmente
+   - Use diferentes chaves para desenvolvimento e produção
 
 ## 🚀 Como Usar
 
