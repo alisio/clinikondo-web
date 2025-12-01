@@ -26,6 +26,22 @@ Edite `.env.docker` com suas próprias credenciais:
 
 ## 🚀 Como Usar
 
+### 📦 Usando a Imagem do Docker Hub (Recomendado)
+
+A imagem está disponível no Docker Hub: [`alisio/clinikondo-web`](https://hub.docker.com/r/alisio/clinikondo-web)
+
+**Plataformas suportadas:**
+- ✅ **linux/amd64**: PCs com Intel/AMD (x86_64)
+- ✅ **linux/arm64**: Apple Silicon (M1/M2/M3) e Raspberry Pi 4/5
+
+```bash
+# Pull da imagem
+docker pull alisio/clinikondo-web:latest
+
+# Executar
+docker run -p 8080:80 alisio/clinikondo-web:latest
+```
+
 ### Método 1: Docker Compose (Recomendado)
 
 ```bash

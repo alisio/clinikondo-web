@@ -87,7 +87,20 @@ Para uma experiência mais simples e isolamento completo, use Docker:
 - Docker instalado
 - Docker Compose (opcional)
 
-### Método Rápido (Recomendado)
+### Usando Imagem do Docker Hub (Recomendado)
+```bash
+# Pull da imagem oficial
+docker pull alisio/clinikondo-web:latest
+
+# Executar
+docker run -p 8080:80 alisio/clinikondo-web:latest
+```
+
+**Plataformas suportadas:**
+- ✅ **linux/amd64**: PCs com Intel/AMD
+- ✅ **linux/arm64**: Apple Silicon e Raspberry Pi 4/5
+
+### Método Rápido (Build Local)
 ```bash
 # Build e execução automática com todas as configurações
 ./run-docker.sh
