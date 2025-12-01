@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useFamily } from '../contexts/FamilyContext'
 import { 
@@ -132,7 +133,7 @@ function PatientForm({ patient, onSubmit, onCancel, loading }) {
 }
 
 // Card de paciente
-function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias, onShare, hasGroup, isOwn }) {
+function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias, onShare, hasGroup, isOwn, onClick }) {
   const [newAlias, setNewAlias] = useState('')
   const [showAliasInput, setShowAliasInput] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -191,7 +192,11 @@ function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias, onS
   }
 
   return (
-    <div className={`card p-6 ${!isOwn ? 'border-primary-200 bg-primary-50/30' : ''}`}>
+    <div 
+      className={`card p-6 ${!isOwn ? 'border-primary-200 bg-primary-50/30' : ''}`}
+      onClick={onClick}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
+    >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="text-4xl">{genderIcons[patient.gender] || '🧑'}</div>
@@ -218,7 +223,7 @@ function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias, onS
             {/* Botão de compartilhamento (só se tiver grupo) */}
             {hasGroup && (
               <button
-                onClick={handleToggleSharing}
+                onClick={(e) => { e.stopPropagation(); handleToggleSharing(); }}
                 disabled={sharingLoading}
                 className={`p-2 rounded-lg ${
                   patient.isShared 
@@ -237,14 +242,14 @@ function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias, onS
               </button>
             )}
             <button
-              onClick={() => onEdit(patient)}
+              onClick={(e) => { e.stopPropagation(); onEdit(patient); }}
               className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
               title="Editar"
             >
               <Edit2 className="w-4 h-4" />
             </button>
             <button
-              onClick={handleDelete}
+              onClick={(e) => { e.stopPropagation(); handleDelete(); }}
               disabled={deleting}
               className="p-2 rounded-lg hover:bg-error-50 text-error-600"
               title="Excluir"
@@ -281,7 +286,7 @@ function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias, onS
             <span className="text-sm font-medium text-gray-700">Apelidos</span>
             {!showAliasInput && (patient.aliases?.length || 0) < 10 && (
               <button
-                onClick={() => setShowAliasInput(true)}
+                onClick={(e) => { e.stopPropagation(); setShowAliasInput(true); }}
                 className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" />
@@ -298,7 +303,7 @@ function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias, onS
               >
                 {alias}
                 <button
-                  onClick={() => handleRemoveAlias(alias)}
+                  onClick={(e) => { e.stopPropagation(); handleRemoveAlias(alias); }}
                   className="text-gray-400 hover:text-error-500"
                 >
                   <X className="w-3 h-3" />
@@ -331,7 +336,7 @@ function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias, onS
                 }}
               />
               <button
-                onClick={handleAddAlias}
+                onClick={(e) => { e.stopPropagation(); handleAddAlias(); }}
                 className="p-2 rounded-lg bg-primary-500 text-white hover:bg-primary-600"
               >
                 <Check className="w-4 h-4" />
@@ -356,6 +361,7 @@ function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias, onS
 export default function PatientsPage() {
   const { user } = useAuth()
   const { hasGroup, familyGroup } = useFamily()
+  const navigate = useNavigate()
   const [patients, setPatients] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -517,6 +523,7 @@ export default function PatientsPage() {
               onAddAlias={handleAddAlias}
               onRemoveAlias={handleRemoveAlias}
               onShare={handleShare}
+              onClick={() => navigate(`/files?patient=${patient.id}`)}
               hasGroup={hasGroup}
               isOwn={patient.isOwn !== false}
             />
