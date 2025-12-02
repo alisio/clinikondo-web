@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useFamily } from '../contexts/FamilyContext'
@@ -24,7 +24,8 @@ import {
   Lock,
   Unlock,
   Settings,
-  Eye
+  Eye,
+  Search
 } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import Spinner from '../components/ui/Spinner'
@@ -195,6 +196,10 @@ function PatientCard({ patient, onEdit, onDelete, onAddAlias, onRemoveAlias, onS
     <div 
       className={`card p-6 ${!isOwn ? 'border-primary-200 bg-primary-50/30' : ''}`}
       onClick={onClick}
+      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && onClick) { e.preventDefault(); onClick(); } }}
+      tabIndex={onClick ? 0 : -1}
+      role={onClick ? 'button' : undefined}
+      aria-label={onClick ? `Ver documentos de ${patient.name}` : undefined}
       style={{ cursor: onClick ? 'pointer' : 'default' }}
     >
       <div className="flex items-start justify-between mb-4">
@@ -367,6 +372,7 @@ export default function PatientsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingPatient, setEditingPatient] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Carregar pacientes (próprios + compartilhados do grupo)
   useEffect(() => {
@@ -393,6 +399,18 @@ export default function PatientsPage() {
       setLoading(false)
     }
   }
+
+  // Filtrar pacientes baseado na busca
+  const filteredPatients = useMemo(() => {
+    if (!searchQuery.trim()) return patients
+    
+    const query = searchQuery.toLowerCase().trim()
+    return patients.filter(patient => 
+      patient.name.toLowerCase().includes(query) ||
+      (patient.aliases && patient.aliases.some(alias => alias.toLowerCase().includes(query))) ||
+      (patient.relationship && RELATIONSHIPS.find(r => r.value === patient.relationship)?.label.toLowerCase().includes(query))
+    )
+  }, [patients, searchQuery])
 
   function openModal(patient = null) {
     // Só permite editar pacientes próprios
@@ -465,7 +483,7 @@ export default function PatientsPage() {
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Pacientes</h1>
           <p className="text-gray-500 mt-1">
@@ -476,10 +494,25 @@ export default function PatientsPage() {
           </p>
         </div>
         
-        <button onClick={() => openModal()} className="btn-primary">
-          <UserPlus className="w-5 h-5" />
-          Adicionar Paciente
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+          {/* Campo de busca */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar pacientes..."
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 w-full sm:w-64"
+              aria-label="Buscar pacientes por nome, apelido ou parentesco"
+            />
+          </div>
+          
+          <button onClick={() => openModal()} className="btn-primary whitespace-nowrap">
+            <UserPlus className="w-5 h-5" />
+            Adicionar Paciente
+          </button>
+        </div>
       </div>
 
       {/* Info sobre compartilhamento */}
@@ -512,23 +545,39 @@ export default function PatientsPage() {
             </button>
           }
         />
+      ) : filteredPatients.length === 0 ? (
+        <EmptyState
+          icon={Search}
+          title="Nenhum paciente encontrado"
+          description={`Não encontramos pacientes que correspondam à busca "${searchQuery}". Tente ajustar os termos.`}
+          action={
+            <button onClick={() => setSearchQuery('')} className="btn-secondary">
+              Limpar busca
+            </button>
+          }
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {patients.map(patient => (
-            <PatientCard
-              key={patient.id}
-              patient={patient}
-              onEdit={openModal}
-              onDelete={handleDelete}
-              onAddAlias={handleAddAlias}
-              onRemoveAlias={handleRemoveAlias}
-              onShare={handleShare}
-              onClick={() => navigate(`/files?patient=${patient.id}`)}
-              hasGroup={hasGroup}
-              isOwn={patient.isOwn !== false}
-            />
-          ))}
-        </div>
+        <>
+          <div className="text-sm text-gray-600 mb-4">
+            Mostrando {filteredPatients.length} de {patients.length} pacientes
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            {filteredPatients.map(patient => (
+              <PatientCard
+                key={patient.id}
+                patient={patient}
+                onEdit={openModal}
+                onDelete={handleDelete}
+                onAddAlias={handleAddAlias}
+                onRemoveAlias={handleRemoveAlias}
+                onShare={handleShare}
+                onClick={() => navigate(`/files?patient=${patient.id}`)}
+                hasGroup={hasGroup}
+                isOwn={patient.isOwn !== false}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       {/* Modal de criação/edição */}

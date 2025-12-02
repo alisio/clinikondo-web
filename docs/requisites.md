@@ -21,6 +21,7 @@ Data: 1 de Dezembro de 2025
 | [7. Requisitos Não-Funcionais](#7-requisitos-não-funcionais-rnf) | Performance, segurança, etc | Devs + Ops |
 | [8. Glossário](#8-glossário-de-termos-técnicos) | Explicação de termos | 🆕 Leigos + Iniciantes |
 | [9. FAQ](#9-faq---perguntas-frequentes) | Respostas a dúvidas comuns | 🆕 Todos |
+| [10. Implementações Futuras](#10-implementações-futuras) | Funcionalidades planejadas | Devs + Gerentes |
 
 ---
 
@@ -916,12 +917,15 @@ O sistema deve ser responsivo e dividido em quatro seções principais acessíve
 
 6.4 Tela 3: Pacientes (Gestão de Família)
 
-**Propósito:** Criar, editar, gerenciar membros da família e acessar seus documentos rapidamente.
+**Propósito:** Criar, editar, gerenciar membros da família e acessar seus documentos rapidamente. Com ferramentas avançadas de busca para facilitar localização em listas grandes.
 
 ```
 ┌─ Pacientes ──────────────────────────────────────────────┐
 │                                                           │
+│  🔍 [Buscar pacientes por nome, apelido ou parentesco...] │
 │  [+ Adicionar novo paciente]                             │
+│                                                           │
+│  Mostrando 3 de 15 pacientes                              │
 │                                                           │
 │  👩 MARIA SILVA                              [✎ Editar]  │
 │  ├─ Gênero: Feminino                                     │
@@ -951,7 +955,9 @@ O sistema deve ser responsivo e dividido em quatro seções principais acessíve
 ```
 
 **Campos visíveis:**
-- Lista expandível de pacientes
+- Campo de busca avançada com ícone
+- Contador de resultados filtrados
+- Lista de pacientes em cards responsivos
 - Nome, gênero, parentesco
 - Data de nascimento
 - Apelidos (com opção de adicionar/remover)
@@ -959,8 +965,15 @@ O sistema deve ser responsivo e dividido em quatro seções principais acessíve
 - Botões: Editar, Adicionar
 
 **Interações:**
+- **Busca avançada:** Filtragem em tempo real por nome, apelidos ou parentesco
 - **Clique no card do paciente:** Navega diretamente para a tela "Arquivos" filtrada por aquele paciente
-- Permite acesso rápido aos documentos de um paciente específico sem precisar buscar manualmente
+- **Responsividade:** Layout adaptável (1-4 colunas dependendo da tela)
+- **Acessibilidade:** Navegação por teclado, labels ARIA, suporte a leitores de tela
+
+**Funcionalidades de UX:**
+- **Paginação implícita:** Contador mostra "X de Y pacientes" para orientação
+- **Estado vazio inteligente:** Mensagem específica quando busca não encontra resultados
+- **Performance:** Filtragem otimizada com useMemo para listas grandes
 
 ---
 
@@ -1513,3 +1526,35 @@ R: Envie email com:
 | **API** | Intermediário que faz programa A falar com programa B |
 | **Erro 404** | Arquivo não encontrado |
 | **Timeout** | Esperou demais, desistiu |
+
+---
+
+## 🚀 10. Implementações Futuras
+
+Esta seção descreve funcionalidades planejadas para versões futuras do CliniKondo, priorizando melhorias baseadas em feedback de usuários e avanços tecnológicos.
+
+### 10.1 Agente de IA Conversacional com RAG (Retrieval-Augmented Generation)
+
+**Descrição**: Implementar um chatbot integrado na interface para que usuários façam perguntas sobre documentação existente e dados de pacientes. O agente usará RAG para combinar busca semântica em embeddings de documentos com geração de respostas via LLM, garantindo respostas contextuais e precisas.
+
+**Objetivos**:
+- Permitir consultas naturais como "Quais exames o paciente João fez no último ano?" ou "Explique o laudo do exame X".
+- Integrar com Firestore para dados de pacientes e Firebase Storage para documentos indexados.
+- Garantir isolamento de dados por usuário/família, com autenticação obrigatória.
+
+**Benefícios**:
+- Melhora UX ao reduzir tempo de busca manual.
+- Aumenta acessibilidade para usuários não-técnicos.
+- Potencial para reduzir suporte humano.
+
+**Cronograma Estimado**: v2.0 (Q1 2026), após testes de RAG em ambiente controlado.
+
+**Dependências Técnicas**:
+- Indexação de documentos com embeddings (e.g., via Pinecone ou Firebase Extensions).
+- Integração com API de LLM (OpenAI ou similar).
+- Componente de chat responsivo em React.
+
+**Riscos e Mitigações**:
+- Custos: Monitorar uso de API; implementar limites por usuário.
+- Privacidade: Garantir que dados não sejam enviados para LLMs externos sem criptografia/anomização.
+- Precisão: Testes rigorosos para evitar respostas incorretas; incluir disclaimers.
