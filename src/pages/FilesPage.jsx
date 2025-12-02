@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useFamily } from '../contexts/FamilyContext'
@@ -18,8 +18,7 @@ import {
   ExternalLink,
   AlertCircle,
   User,
-  Tag,
-  Sparkles
+  Tag
 } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import Spinner from '../components/ui/Spinner'
@@ -132,10 +131,21 @@ function DocumentViewModal({ document, patient, isOpen, onClose, onTagsChange })
 function DocumentCard({ document, patient, patients, onView, onDelete, onLink }) {
   const [showLinkMenu, setShowLinkMenu] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const imgRef = useRef(null)
+  const tooltipRef = useRef(null)
 
   // Obter tags do documento
   const { autoTags, manualTags } = getDocumentTags(document)
   const allTags = [...autoTags, ...manualTags]
+
+  // Ajustar largura do tooltip baseado na thumbnail
+  useEffect(() => {
+    if (imgRef.current && tooltipRef.current) {
+      const thumbnailWidth = imgRef.current.offsetWidth
+      // Tooltip ter a mesma largura da thumbnail x 4
+      tooltipRef.current.style.width = `${Math.max(thumbnailWidth * 4, 256)}px`
+    }
+  }, [document.thumbnailUrl])
 
   async function handleDelete() {
     if (!confirm('Tem certeza que deseja excluir este documento?')) return
@@ -150,15 +160,17 @@ function DocumentCard({ document, patient, patients, onView, onDelete, onLink })
   }
 
   return (
-    <div className="card p-4 hover:border-primary-200 transition-colors">
+    <div className="card pt-6 pb-4 px-4 hover:border-primary-200 transition-colors overflow-visible">
       <div className="flex items-start gap-4">
         {/* Thumbnail ou ícone */}
         {document.thumbnailUrl ? (
-          <div className="doc-icon flex-shrink-0">
+          <div className="doc-icon flex-shrink-0 group relative">
             <img 
+              ref={imgRef}
               src={document.thumbnailUrl} 
-              alt="Preview" 
-              className="w-12 h-12 object-cover rounded-lg border border-gray-200"
+              alt="Preview do documento" 
+              className="w-20 h-20 object-cover rounded-lg border border-gray-200 cursor-pointer"
+              onClick={() => onView(document)}
               onError={(e) => {
                 // Fallback para ícone se thumbnail falhar
                 e.target.style.display = 'none'
@@ -168,9 +180,24 @@ function DocumentCard({ document, patient, patients, onView, onDelete, onLink })
             <div className="hidden">
               <DocumentIcon type={document.type} />
             </div>
+            {/* Tooltip com preview maior - posicionado à DIREITA */}
+            <div 
+              ref={tooltipRef}
+              className="absolute left-full top-0 ml-3 bg-white border border-gray-200 rounded-lg shadow-2xl p-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50"
+              style={{ minWidth: '256px' }}
+            >
+              <img 
+                src={document.thumbnailUrl} 
+                alt="Preview expandido" 
+                className="w-full h-64 object-cover rounded-md"
+              />
+              <p className="text-xs text-gray-600 mt-3 text-center font-medium">Clique para visualizar</p>
+            </div>
           </div>
         ) : (
-          <DocumentIcon type={document.type} />
+          <div className="doc-icon flex-shrink-0">
+            <DocumentIcon type={document.type} />
+          </div>
         )}
         
         <div className="flex-1 min-w-0">
@@ -179,12 +206,30 @@ function DocumentCard({ document, patient, patients, onView, onDelete, onLink })
           </h4>
           
           <div className="flex flex-wrap items-center gap-2 mt-1 text-sm">
-            <span className="badge-primary">{document.type}</span>
-            <span className="badge-success">{document.specialty}</span>
+            <span className="badge-primary flex items-center gap-1">
+              <FileText className="w-3 h-3" />
+              {document.type}
+            </span>
+            <span className="badge-success flex items-center gap-1">
+              <User className="w-3 h-3" />
+              {document.specialty}
+            </span>
             <span className="text-gray-500">
               {document.date ? formatDate(document.date) : 'Sem data'}
             </span>
           </div>
+
+          {/* Preview de texto extraído */}
+          {document.extractedContent && (
+            <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-700 max-h-16 overflow-hidden">
+              <pre className="whitespace-pre-wrap font-sans leading-relaxed">
+                {document.extractedContent.length > 150 
+                  ? `${document.extractedContent.substring(0, 150)}...` 
+                  : document.extractedContent
+                }
+              </pre>
+            </div>
+          )}
 
           {/* Tags (RF16) */}
           {allTags.length > 0 && (
@@ -256,7 +301,7 @@ function DocumentCard({ document, patient, patients, onView, onDelete, onLink })
           <button
             onClick={() => onView(document)}
             className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
-            title="Visualizar"
+            title="Visualizar detalhes"
           >
             <Eye className="w-4 h-4" />
           </button>

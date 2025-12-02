@@ -249,6 +249,7 @@ export default function ProcessorPage() {
         patientId: patientId,
         extractedText: pendingResult.extractedText,
         classification: pendingResult.classification,
+        thumbnail: pendingResult.thumbnail, // Adicionado: thumbnail gerado
         tags: processExtractedTags(pendingResult.classification?.tags || []), // RF16: Tags automáticas
         suggestedPatients: item.suggestedPatients?.map(sp => ({
           patientId: sp.patient.id,

@@ -979,24 +979,26 @@ O sistema deve ser responsivo e dividido em quatro seções principais acessíve
 
 6.5 Tela 4: Arquivos (Consulta & Download)
 
-**Propósito:** Buscar, visualizar, baixar documentos processados.
+**Propósito:** Buscar, visualizar, baixar documentos processados. Com previews visuais aprimorados para identificação rápida.
 
 ```
 ┌─ Arquivos ────────────────────────────────────────────────┐
 │                                                            │
-│  🔍 [Buscar por nome, tipo ou especialidade...]           │
+│  🔍 [Buscar por nome, tipo, especialidade ou conteúdo...] │
 │  Filtros: [📁 Tipo ▼] [👨‍⚕️ Especialidade ▼] [📅 Data ▼]  │
 │                                                            │
 │  👩 MARIA SILVA  (8 documentos)                            │
-│  ├─ [📄] 2025-11-29-maria_silva-exame-cardiologia.pdf     │
-│  │  Tipo: Exame | Especialidade: Cardiologia             │
-│  │  Data: 29/11/2025 | Confiança: 95% ⭐⭐⭐⭐⭐            │
-│  │  [👁️ Visualizar] [📥 Download] [✎ Editar]            │
+│  ├─ [📄] [Thumbnail 80x80] 2025-11-29-maria_silva-exame... │
+│  │  📄 Exame | 👨‍⚕️ Cardiologia | 📅 29/11/2025          │
+│  │  ⭐⭐⭐⭐⭐ 95% confiança                                   │
+│  │  "Paciente apresenta arritmia... [preview texto]"      │
+│  │  [👁️ Ver] [📥 Download] [🗑️ Excluir]     │
 │  │                                                        │
-│  ├─ [💊] 2025-11-15-maria_silva-receita-pediatria.jpg     │
-│  │  Tipo: Receita | Especialidade: Pediatria             │
-│  │  Data: 15/11/2025 | Confiança: 88% ⭐⭐⭐⭐             │
-│  │  [👁️ Visualizar] [📥 Download] [✎ Editar]            │
+│  ├─ [💊] [Thumbnail 80x80] 2025-11-15-maria_silva-rec...  │
+│  │  💊 Receita | 👨‍⚕️ Pediatria | 📅 15/11/2025          │
+│  │  ⭐⭐⭐⭐ 88% confiança                                    │
+│  │  "Prescrever dipirona 500mg... [preview texto]"        │
+│  │  [👁️ Ver] [📥 Download] [🗑️ Excluir]     │
 │  │                                                        │
 │  └─ [🩺] 2025-10-03-maria_silva-laudo-oftalmologia.pdf    │
 │     Tipo: Laudo | Especialidade: Oftalmologia             │
@@ -1010,22 +1012,28 @@ O sistema deve ser responsivo e dividido em quatro seções principais acessíve
 └────────────────────────────────────────────────────────────┘
 ```
 
-**Nota:** Os colchetes `[📄]` representam os thumbnails visuais. Na implementação real, são imagens miniatura de 48x48px mostrando preview do documento (primeira página para PDFs, imagem reduzida para fotos). Se o thumbnail não carregar, volta automaticamente para o ícone emoji tradicional.
+**Nota:** Os colchetes `[📄]` representam os thumbnails visuais. Na implementação real, são imagens miniatura de 80x80px com zoom interativo no hover, mostrando preview expandido. Inclui preview de texto extraído para identificação rápida. Se o thumbnail não carregar, volta automaticamente para o ícone emoji tradicional.
 
 **Campos visíveis:**
-- Barra de busca
+- Barra de busca (inclui conteúdo extraído)
 - Filtros por tipo, especialidade, data
 - Lista hierárquica (paciente → documentos)
+- Thumbnails visuais (80x80px) com zoom no hover
+- Preview de texto extraído (primeiras linhas)
 - Nome organizado (finalName)
-- Metadados: tipo, especialidade, data, confiança
+- Metadados com ícones: tipo, especialidade, data, confiança
 - Ícones de status (⭐ = confiança visual)
-- Botões: Visualizar, Download, Editar
+- Botões: Ver detalhes, Download, Excluir
 
 **Interações:**
+- **Thumbnails interativos:** Clique para visualizar detalhes; hover mostra preview expandido (tooltip)
+- **Preview de texto:** Mostra conteúdo extraído truncado para identificação rápida
+- **Busca avançada:** Inclui conteúdo do texto extraído com sinônimos médicos
 - **Grupos expansíveis:** Clique no cabeçalho para expandir/colapsar documentos por paciente
 - **Vinculação manual:** Dropdown em documentos não vinculados permite seleção de paciente
 - **Filtros dinâmicos:** Atualização em tempo real da lista conforme filtros
 - **Navegação modal:** Visualização detalhada abre em modal overlay
+- **Responsividade:** Layout adaptável em mobile/desktop
 
 ---
 
