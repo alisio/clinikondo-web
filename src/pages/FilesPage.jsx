@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useFamily } from '../contexts/FamilyContext'
-import { getDocuments, getPatients, deleteDocument, linkDocumentToPatient, getDocumentTags } from '../services/firestoreService'
+import { getDocuments, getPatients, deleteDocument, linkDocumentToPatient, getDocumentTags, updateDocument } from '../services/firestoreService'
 import { getDocumentsWithShared, getVisiblePatients } from '../services/familyService'
 import { DOCUMENT_TYPES, SPECIALTIES, expandSearchWithSynonyms, normalizeTag } from '../lib/constants'
 import { formatDate, formatFileSize, getConfidenceColor, debounce } from '../lib/utils'
@@ -46,38 +46,132 @@ function DocumentIcon({ type }) {
 }
 
 // Modal de visualização de documento
-function DocumentViewModal({ document, patient, isOpen, onClose, onTagsChange }) {
+function DocumentViewModal({ document, patient, isOpen, onClose, onTagsChange, onUpdate }) {
   if (!document) return null
 
+  const { canEdit } = useFamily()
   const { autoTags, manualTags } = getDocumentTags(document)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editData, setEditData] = useState({
+    type: document.type || '',
+    specialty: document.specialty || '',
+    date: document.date ? new Date(document.date).toISOString().split('T')[0] : '',
+  })
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await updateDocument(document.id, editData)
+      toast.success('Metadados atualizados!')
+      if (onUpdate) onUpdate(editData)
+      onClose()
+    } catch (error) {
+      toast.error('Erro ao salvar: ' + error.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCancel = () => {
+    setEditData({
+      type: document.type || '',
+      specialty: document.specialty || '',
+      date: document.date ? new Date(document.date).toISOString().split('T')[0] : '',
+    })
+    setIsEditing(false)
+  }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={document.finalName} size="lg">
       <div className="space-y-6">
         {/* Metadados */}
         <div className="card p-4 bg-gray-50">
-          <h4 className="font-medium text-gray-900 mb-3">📊 Metadados</h4>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            <dt className="text-gray-500">Tipo</dt>
-            <dd className="font-medium">{document.type}</dd>
-            
-            <dt className="text-gray-500">Especialidade</dt>
-            <dd className="font-medium">{document.specialty}</dd>
-            
-            <dt className="text-gray-500">Data</dt>
-            <dd className="font-medium">{document.date ? formatDate(document.date) : 'N/A'}</dd>
-            
-            <dt className="text-gray-500">Paciente</dt>
-            <dd className="font-medium">{patient?.name || 'Não vinculado'}</dd>
-            
-            <dt className="text-gray-500">Confiança</dt>
-            <dd className={`font-medium ${getConfidenceColor(document.confidence)}`}>
-              {document.confidence}%
-            </dd>
-            
-            <dt className="text-gray-500">Tamanho</dt>
-            <dd className="font-medium">{formatFileSize(document.fileSize)}</dd>
-          </dl>
+          <div className="flex justify-between items-center mb-3">
+            <h4 className="font-medium text-gray-900">📊 Metadados</h4>
+            {canEdit && !isEditing && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="btn-secondary text-sm py-1 px-2"
+              >
+                ✎ Editar
+              </button>
+            )}
+          </div>
+          {isEditing ? (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                <select
+                  value={editData.type}
+                  onChange={(e) => setEditData(prev => ({ ...prev, type: e.target.value }))}
+                  className="w-full p-2 border rounded"
+                >
+                  {DOCUMENT_TYPES.map(type => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Especialidade</label>
+                <select
+                  value={editData.specialty}
+                  onChange={(e) => setEditData(prev => ({ ...prev, specialty: e.target.value }))}
+                  className="w-full p-2 border rounded"
+                >
+                  {SPECIALTIES.map(spec => (
+                    <option key={spec} value={spec}>{spec}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
+                <input
+                  type="date"
+                  value={editData.date}
+                  onChange={(e) => setEditData(prev => ({ ...prev, date: e.target.value }))}
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="btn-primary text-sm py-1 px-3"
+                >
+                  {saving ? <Spinner size="sm" /> : 'Salvar'}
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="btn-secondary text-sm py-1 px-3"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <dt className="text-gray-500">Tipo</dt>
+              <dd className="font-medium">{document.type}</dd>
+              
+              <dt className="text-gray-500">Especialidade</dt>
+              <dd className="font-medium">{document.specialty}</dd>
+              
+              <dt className="text-gray-500">Data</dt>
+              <dd className="font-medium">{document.date ? formatDate(document.date) : 'N/A'}</dd>
+              
+              <dt className="text-gray-500">Paciente</dt>
+              <dd className="font-medium">{patient?.name || 'Não vinculado'}</dd>
+              
+              <dt className="text-gray-500">Confiança</dt>
+              <dd className={`font-medium ${getConfidenceColor(document.confidence)}`}>
+                {document.confidence}%
+              </dd>
+              
+              <dt className="text-gray-500">Tamanho</dt>
+              <dd className="font-medium">{formatFileSize(document.fileSize)}</dd>
+            </dl>
+          )}
         </div>
 
         {/* Tags (RF16, RF18) */}
@@ -517,6 +611,16 @@ export default function FilesPage() {
     }
   }
 
+  // Handler para atualização de metadados
+  function handleDocumentUpdate(documentId, updates) {
+    setDocuments(prev => prev.map(doc => 
+      doc.id === documentId ? { ...doc, ...updates } : doc
+    ))
+    if (viewingDocument?.id === documentId) {
+      setViewingDocument(prev => ({ ...prev, ...updates }))
+    }
+  }
+
   const debouncedSearch = debounce((value) => setSearch(value), 300)
 
   if (loading) {
@@ -668,6 +772,7 @@ export default function FilesPage() {
         isOpen={!!viewingDocument}
         onClose={() => setViewingDocument(null)}
         onTagsChange={handleTagsChange}
+        onUpdate={(updates) => handleDocumentUpdate(viewingDocument.id, updates)}
       />
     </div>
   )
